@@ -1,0 +1,1 @@
+from distributions.beta import Beta

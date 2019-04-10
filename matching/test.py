@@ -1,41 +1,43 @@
-# Build environment
+try:
+    # IMPORT FOR PYCHARM USERS
+    from matching.graph.graph import Graph
+    from matching.experiment.class_algo import Class_Algo
+    from matching.experiment.class_algo_edge import Class_Algo_Edge
 
-# IMPORT FOR PYCHARM USERS
-from matching.graph.graph import Graph
-from matching.experiment.class_algo import Class_Algo
-from matching.experiment.class_algo_edge import Class_Algo_Edge
+    from matching.environment.class_env import Class_Env
+    from matching.environment.class_env_edge import Class_Env_Edge
+    from matching.environment.environment import Environment
 
-from matching.environment.class_env import Class_Env
-from matching.environment.class_env_edge import Class_Env_Edge
-from matching.environment.environment import Environment
+    from matching.distributions.beta import Beta
+    from matching.distributions.uniform_discrete import Uniform_Discrete
+    from matching.distributions.bernoulli import Bernoulli
 
-from matching.distributions.beta import Beta
-from matching.distributions.uniform_discrete import Uniform_Discrete
-from matching.distributions.bernoulli import Bernoulli
+    from matching.experiment.DDA import DDA
+    from matching.algorithms.Hungarian_algorithm import Hungarian_algorithm
 
-from matching.experiment.DDA import DDA
-from matching.algorithms.Hungarian_algorithm import Hungarian_algorithm
+    from matching.utilities.drawing import draw_graph
+    from random import randint, random
+except (SystemError, ImportError):
+    # IMPORT FOR NON-PYCHARM USERS
 
-from matching.utilities.drawing import draw_graph
-from random import randint, random
+    from graph import Graph
+    
+    from experiment.class_algo import Class_Algo
+    from experiment.class_algo_edge import Class_Algo_Edge
+    
+    from environment.class_env import Class_Env
+    from environment.class_env_edge import Class_Env_Edge
+    from environment.environment import Environment
+    
+    from distributions import Beta
+    from distributions import Uniform_Discrete
+    from distributions import Bernoulli
 
-# IMPORT FOR NON-PYCHARM USERS
-
-# from graph import Graph
-#
-# from experiment.class_algo import Class_Algo
-# from experiment.class_algo_edge import Class_Algo_Edge
-#
-# from environment.class_env import Class_Env
-# from environment.class_env_edge import Class_Env_Edge
-# from environment.environment import Environment
-#
-# from distributions import Beta
-# from distributions import Uniform_Discrete
-# from distributions import Bernoulli
-#
-# from utilities.drawing import draw_graph
-# from random import randint, random
+    from experiment.DDA import DDA
+    from algorithms.Hungarian_algorithm import Hungarian_algorithm
+    
+    from utilities.drawing import draw_graph
+    from random import randint, random
 
 # Build environment
 
@@ -93,14 +95,16 @@ for round in range(5):
         node_class = [c for c in algo_classes if c.id == class_id][0]
         graph.add_node(node_class, time_to_stay)
 
+    graph.update_weights()
+
     #	TODO: method to produce the adjacency matrix from the graph
     adjacency_matrix = [[]]
 
     if Dda.is_there_critical_seller_node(graph.nodes):
-        matching_result, matching_assignment = Dda.perform_matching(adjacency_matrix)
+        pass
+        #matching_result, matching_assignment = Dda.perform_matching(adjacency_matrix)
 
         # TODO: to_graph_method(adjacency_matrix)
-        graph.update_weights()
 
     draw_graph(graph)
 

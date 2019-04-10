@@ -1,8 +1,10 @@
-# IMPORT PYCHARM USERS
-from matching.distributions.probability_distribution import Probability_Distribution
+try:
+	# IMPORT PYCHARM USERS
+	from matching.distributions.probability_distribution import Probability_Distribution
+except (SystemError, ImportError):
+	# IMPORT NON-PYCHARM USERS
+	from distributions.probability_distribution import Probability_Distribution
 
-# IMPORT NON-PYCHARM USERS
-# from distributions.probability_distribution import Probability_Distribution
 import numpy as np
 
 
@@ -11,7 +13,7 @@ class Beta(Probability_Distribution):
         self.alpha = 1
         self.beta = 1
 
-    def sample(self, parameters):
+    def sample(self):
         return np.random.beta(self.alpha, self.beta)
 
     def update_parameters(self, parameters):

@@ -1,5 +1,5 @@
 class Probability_Distribution:
-	def sample(self, parameters):
+	def sample(self):
 		pass
 
 	def update_parameters(self, parameters):

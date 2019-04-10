@@ -1,12 +1,13 @@
-# IMPORT FOR PYCHARM USERS
+try:
+    # IMPORT FOR PYCHARM USERS
 
-from matching.graph.node import Node
-from matching.graph.edge import Edge
+    from matching.graph.node import Node
+    from matching.graph.edge import Edge
+except (SystemError, ImportError):
+    # IMPORT FOR NON-PYCHARM USERS
 
-# IMPORT FOR NON-PYCHARM USERS
-
-# from graph.node import Node
-# from graph.edge import Edge
+    from graph.node import Node
+    from graph.edge import Edge
 
 class Graph:
     def __init__(self):

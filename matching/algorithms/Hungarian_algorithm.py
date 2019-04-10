@@ -1,6 +1,5 @@
 import numpy as np
-from scipy.optimize import linear_sum_assignment
-
+#from scipy.optimize import linear_sum_assignment
 
 class Hungarian_algorithm:
 

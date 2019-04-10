@@ -7,7 +7,7 @@ class UCB1(Probability_Distribution):
         self.realization_number = 0
 
     def sample(self, current_time):
-        return self.empirical_mean - np.sqrt((2*np.log(current_time)/(self.realization_number * (current_time - 1))))
+        return self.empirical_mean - np.sqrt((2*np.log(current_time)/(self.realization_number)))
 
     def update_parameters(self, new_realization):
         self.empirical_mean = (self.empirical_mean * self.realization_number + new_realization) \

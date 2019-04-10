@@ -41,7 +41,9 @@ except (SystemError, ImportError):
 
 # Build environment
 
-num_phases = 4
+num_days = 1
+phase_lengths = [3]
+num_phases = len(phase_lengths)
 num_left_classes = 2
 num_right_classes = 1
 
@@ -88,24 +90,22 @@ for i in left_classes_ids:
         l_class.set_edge_data(r_class, class_edge)
         r_class.set_edge_data(l_class, class_edge)
 
-for round in range(5):
-    new_nodes = environment.get_new_nodes(0)
+for day in range(num_days):
+    for (phase_id, phase_length) in enumerate(phase_lengths):
+        for round in range(phase_length):
+            new_nodes = environment.get_new_nodes(phase_id)
 
-    for (class_id, time_to_stay) in new_nodes:
-        node_class = [c for c in algo_classes if c.id == class_id][0]
-        graph.add_node(node_class, time_to_stay)
+            for (class_id, time_to_stay) in new_nodes:
+                node_class = [c for c in algo_classes if c.id == class_id][0]
+                graph.add_node(node_class, time_to_stay)
 
-    graph.update_weights()
+            graph.update_weights()
 
-    #	TODO: method to produce the adjacency matrix from the graph
-    adjacency_matrix = [[]]
+            adjacency_matrix = graph.get_adjacency_matrix()
 
-    if Dda.is_there_critical_seller_node(graph.nodes):
-        pass
-        #matching_result, matching_assignment = Dda.perform_matching(adjacency_matrix)
+            if Dda.is_there_critical_seller_node(graph.nodes):
+                matching_result, matching_assignment = Dda.perform_matching(adjacency_matrix)
 
-        # TODO: to_graph_method(adjacency_matrix)
+            draw_graph(graph)
 
-    draw_graph(graph)
-
-    graph.end_round_routine()
+            graph.end_round_routine()

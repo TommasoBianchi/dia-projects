@@ -96,7 +96,7 @@ class Hungarian_algorithm:
             new_marked_rows = np.array([], dtype=int)
 
             for nc in new_marked_cols:
-                new_marked_rows = np.append(new_marked_rows, np.argwhere(assignments[:, nc] == i).reshape[-1])
+                new_marked_rows = np.append(new_marked_rows, np.argwhere(assignments[:, nc] == i).reshape(-1))
             marked_rows = np.unique(np.append(marked_rows, new_marked_rows))
         return np.setdiff1d(rows, marked_rows), np.unique(marked_cols)
 

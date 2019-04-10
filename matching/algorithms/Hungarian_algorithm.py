@@ -17,8 +17,8 @@ class Hungarian_algorithm:
         return self.__final_assignement(matrix, m)
 
     def __final_assignement(self,initial_matrix, m):
-        assignment = np.zeros(m.shape, dtype = int)
-        assignement = self.__assignement_single_zero_lines(m, assignment)
+        assignement = np.zeros(m.shape, dtype = int)
+        assignement = self.__assignement_single_zero_lines(m, assignement)
         while(np.sum(m==0)>0):
             i,j = self.__first_zero(m)
             assignement[i,j] = i
@@ -125,7 +125,7 @@ def compute(matrix):
 
 
 # Test
-#a = np.random.randint(100, size=(3,3))
-#print (a)
-#res1 = compute(a)
-#print("\n Optimal Matchin:\n", res1[1], "\n Value: ", np.sum(res1[0]))
+a = np.random.randint(100, size=(3,3))
+print (a)
+res1 = compute(a)
+print("\n Optimal Matchin:\n", res1[1], "\n Value: ", np.sum(res1[0]))

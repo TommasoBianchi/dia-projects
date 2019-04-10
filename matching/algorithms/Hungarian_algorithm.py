@@ -125,7 +125,7 @@ def compute(matrix):
 
 
 # Test
-a = np.random.randint(100, size=(3,3))
-print (a)
-res1 = compute(a)
-print("\n Optimal Matchin:\n", res1[1], "\n Value: ", np.sum(res1[0]))
+#a = np.random.randint(100, size=(3,3))
+#print (a)
+#res1 = compute(a)
+#print("\n Optimal Matchin:\n", res1[1], "\n Value: ", np.sum(res1[0]))

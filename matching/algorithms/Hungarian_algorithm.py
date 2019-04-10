@@ -76,8 +76,8 @@ class Hungarian_algorithm:
         assigned = np.array([])
         assignments = np.zeros(m.shape, dtype=int)
 
-        for i in range(0, dim):
-            for j in range(0, dim):
+        for i in range(0, m.shape[0]):  # NOTE!!: changed dim into m.shape[0] (by Tommy)
+            for j in range(0, m.shape[1]):  # NOTE!!: changed dim into m.shape[1] (by Tommy)
                 if (m[i, j] == 0 and np.sum(assignments[:, j]) == 0 and np.sum(assignments[i, :]) == 0):
                     assignments[i, j] = i
                     assigned = np.append(assigned, i)
@@ -105,7 +105,7 @@ class Hungarian_algorithm:
         uncovered_cols = np.setdiff1d(np.linspace(0, m.shape[1] - 1, m.shape[1]), covered_rows).astype(int)
         min_val = np.max(m)
 
-        for i in uncovered_cols.astype(int):
+        for i in uncovered_rows.astype(int):
             for j in uncovered_cols.astype(int):
                 if (m[i, j] < min_val):
                     min_val = m[i, j]

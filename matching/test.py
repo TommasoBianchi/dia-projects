@@ -11,6 +11,7 @@ try:
     from matching.distributions.beta import Beta
     from matching.distributions.uniform_discrete import Uniform_Discrete
     from matching.distributions.bernoulli import Bernoulli
+    from matching.distributions.gaussian import Gaussian
 
     from matching.experiment.DDA import DDA
     from matching.algorithms.Hungarian_algorithm import Hungarian_algorithm
@@ -32,6 +33,7 @@ except (SystemError, ImportError):
     from distributions import Beta
     from distributions import Uniform_Discrete
     from distributions import Bernoulli
+    from distributions import Gaussian
 
     from experiment.DDA import DDA
     from algorithms.Hungarian_algorithm import Hungarian_algorithm
@@ -39,24 +41,30 @@ except (SystemError, ImportError):
     from utilities.drawing import draw_graph
     from random import randint, random
 
-# Build environment
+###############################################
+# Configurations (for now, kinda random)
+###############################################
 
-num_days = 1
-phase_lengths = [3]
+num_days = 1    # Number of days the experiment is run
+phase_lengths = [3] # Duration of each phase in round (phases restart identically each day)
 num_phases = len(phase_lengths)
 num_left_classes = 2
 num_right_classes = 1
+
+###############################################
+# Build environment
+###############################################
 
 env_classes = []
 for _ in range(num_phases):
     phase_env_classes = []
 
     for id in range(num_left_classes):
-        phase_env_classes.append(Class_Env(id, True, Uniform_Discrete(0, 2), Uniform_Discrete(1, 3)))
+        phase_env_classes.append(Class_Env(id, True, Gaussian(2, 1), Uniform_Discrete(1, 3)))
 
     for id in range(num_right_classes):
         phase_env_classes.append(
-            Class_Env(num_right_classes + id + 1, False, Uniform_Discrete(0, 3), Uniform_Discrete(2, 5)))
+            Class_Env(num_right_classes + id + 1, False, Gaussian(2, 1), Uniform_Discrete(2, 5)))
 
     for i in range(num_left_classes):
         for j in range(num_right_classes):
@@ -70,13 +78,17 @@ for _ in range(num_phases):
 
 environment = Environment(env_classes)
 
+###############################################
 # Setup the experiment
+###############################################
 
-# instatiate DDA class with the selected matching algorithm
+# Instatiate DDA class with the selected matching algorithm
 Dda = DDA(Hungarian_algorithm())
 
+# Instantiate the main Graph
 graph = Graph()
 
+# Build the Class_Algos from the ids of the Class_Envs
 left_classes_ids = [c.id for c in env_classes[0] if c.is_left]
 right_classes_ids = [c.id for c in env_classes[0] if not c.is_left]
 
@@ -90,22 +102,35 @@ for i in left_classes_ids:
         l_class.set_edge_data(r_class, class_edge)
         r_class.set_edge_data(l_class, class_edge)
 
-for day in range(num_days):
-    for (phase_id, phase_length) in enumerate(phase_lengths):
-        for round in range(phase_length):
+###############################################
+# Main experiment loop
+###############################################
+
+for day in range(num_days): # For every day the experiment is run
+    for (phase_id, phase_length) in enumerate(phase_lengths):   # For every phase of the day
+        for round in range(phase_length):   # For every round in the phase
+            # Sample new nodes from the environment
             new_nodes = environment.get_new_nodes(phase_id)
 
+            # Add those new nodes to the graph (mapping the id returned by the environment into the correct Class_Algo)
             for (class_id, time_to_stay) in new_nodes:
                 node_class = [c for c in algo_classes if c.id == class_id][0]
                 graph.add_node(node_class, time_to_stay)
 
+            # Update the estimates of the weights of the graph (i.e. beta sample/UCB1 bound)
             graph.update_weights()
 
-            adjacency_matrix = graph.get_adjacency_matrix()
-
-            if Dda.is_there_critical_seller_node(graph.nodes):
-                matching_result, matching_assignment = Dda.perform_matching(adjacency_matrix)
-
+            # Draw the graph (for debugging)
             draw_graph(graph)
 
+            # Whenever a node is going to exit the experiment run the DDA (Deferred Dynamic Acceptance) algorithm
+            if Dda.is_there_critical_seller_node(graph.nodes):
+                adjacency_matrix = graph.get_adjacency_matrix()
+                matching_result, matching_assignment = Dda.perform_matching(adjacency_matrix)
+
+                # TODO: given the results of DDA (if and what nodes to match), actually perform the matching
+                # TODO: draw rewards and update distributions for each matching performed
+                # TODO: remove matched nodes from the graph
+
+            # Run the end_round routine of the graph, to update the time_to_stay for each node
             graph.end_round_routine()

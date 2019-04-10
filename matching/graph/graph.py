@@ -16,6 +16,9 @@ class Graph:
         self.nodes = []
         self.edges = []
 
+    # Add a new node to the graph that belongs to a given node_class and with a given time_to_stay (i.e. rounds to stay in the graph).
+    # This method automatically adds edges between this node and any other node on the other side of the graph (it is supposed
+    # to be a bipartite graph).
     def add_node(self, node_class, time_to_stay):
         node = Node(node_class, time_to_stay)
 
@@ -28,14 +31,18 @@ class Graph:
 
         return node
 
+    # Update the estimated weights on all edges of the graph.
     def update_weights(self):
         for edge in self.edges:
             edge.update_weight()
 
+    # Remove a given node (and all of its incident edges) from the graph.
     def remove_node(self, node):
         self.nodes.remove(node)
         self.edges = [e for e in self.edges if (e.node1 != node and e.node2 != node)]
 
+    # Perform the final phase of a round, that is reduce by one the time_to_stay of each node and remove
+    # nodes that have finished their life.
     def end_round_routine(self):
         for node in self.nodes:
             if node.time_to_stay > 1:
@@ -43,6 +50,7 @@ class Graph:
             else:
                 self.remove_node(node)
 
+    # Build the adjacency matrix of this graph as a numpy matrix (the graph is assumed to be bipartite).
     def get_adjacency_matrix(self):
         left_nodes = [n for n in self.nodes if n.node_class.is_left]
         right_nodes = [n for n in self.nodes if not n.node_class.is_left]

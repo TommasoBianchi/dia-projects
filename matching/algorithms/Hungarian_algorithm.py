@@ -17,20 +17,20 @@ class Hungarian_algorithm:
                 self.__step5(m, lines[0], lines[1])
         return self.__final_assignement(matrix, m)
 
-    def __final_assignement(self, initial_matrix, m):
-        assignment = np.zeros(m.shape, dtype=int)
-        assignement = self.__assignement_single_zero_lines(m, assignment)
-        while (np.sum(m == 0) > 0):
-            i, j = self.__first_zero(m)
-            assignement[i, j] = i
-            m[i, :] += 1
-            m[:, j] += 1
-            assignement = self.__assignement_single_zero_lines(m, assignement)
+    def __final_assignement(self,initial_matrix, m):
+        assignement = np.zeros(m.shape, dtype = int)
+        assignement = self.__assignement_single_zero_lines(m, assignement)
+        while(np.sum(m==0)>0):
+            i,j = self.__first_zero(m)
+            assignement[i,j] = i
+            m[i,:] += 1
+            m[:,j] += 1
+            assignement = self.__assignement_single_zero_lines(m,assignement)
 
-        return assignement * initial_matrix, assignement
-
-    def __first_zero(self, m):
-        return np.argwhere(m == 0)[0][0], np.argwhere(m == 0)[0][1]
+        return assignement* initial_matrix, assignement
+    
+    def __first_zero(self,m):
+        return np.argwhere(m==0)[0][0], np.argwhere(m==0)[0][1]
 
     def __assignement_single_zero_lines(self, m, assignement):
         val = self.__find_rows_single_zero(m)

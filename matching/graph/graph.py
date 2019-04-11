@@ -68,3 +68,23 @@ class Graph:
             matrix[l_node_index, r_node_index] = edge.weight
 
         return matrix
+
+    def get_edges_from_matching(self, matching_matrix):
+        edges = []
+
+        left_nodes = [n for n in self.nodes if n.node_class.is_left]
+        right_nodes = [n for n in self.nodes if not n.node_class.is_left]
+
+        for edge in self.edges:
+            if edge.node1.node_class.is_left:
+                l_node = edge.node1
+                r_node = edge.node2
+            else:
+                l_node = edge.node2
+                r_node = edge.node1
+            l_node_index = left_nodes.index(l_node)
+            r_node_index = right_nodes.index(r_node)
+            if matching_matrix[l_node_index, r_node_index] == 1:
+                edges.append(edge)
+
+        return edges

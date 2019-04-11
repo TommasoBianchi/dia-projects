@@ -46,7 +46,7 @@ except (SystemError, ImportError):
 ###############################################
 
 num_days = 1    # Number of days the experiment is run
-phase_lengths = [3] # Duration of each phase in round (phases restart identically each day)
+phase_lengths = [6] # Duration of each phase in round (phases restart identically each day)
 num_phases = len(phase_lengths)
 num_left_classes = 2
 num_right_classes = 1
@@ -107,8 +107,12 @@ for i in left_classes_ids:
 ###############################################
 
 for day in range(num_days): # For every day the experiment is run
+    print("------ Day " + str(day + 1) + " ------")
     for (phase_id, phase_length) in enumerate(phase_lengths):   # For every phase of the day
+        print("---- Phase " + str(phase_id + 1) + " ----")
         for round in range(phase_length):   # For every round in the phase
+            print("-- Round " + str(round + 1) + " --")
+
             # Sample new nodes from the environment
             new_nodes = environment.get_new_nodes(phase_id)
 
@@ -121,16 +125,24 @@ for day in range(num_days): # For every day the experiment is run
             graph.update_weights()
 
             # Draw the graph (for debugging)
-            draw_graph(graph)
+            #draw_graph(graph)
 
             # Whenever a node is going to exit the experiment run the DDA (Deferred Dynamic Acceptance) algorithm
-            if Dda.is_there_critical_seller_node(graph.nodes):
+            if len(graph.edges) > 0 and Dda.is_there_critical_seller_node(graph.nodes):
+                print("Calling DDA")
                 adjacency_matrix = graph.get_adjacency_matrix()
+                print("Adjacency matrix built")
                 matching_result, matching_assignment = Dda.perform_matching(adjacency_matrix)
+                print("Assignment found")
 
                 # TODO: given the results of DDA (if and what nodes to match), actually perform the matching
                 # TODO: draw rewards and update distributions for each matching performed
                 # TODO: remove matched nodes from the graph
+
+                # edges = graph.get_edges_from_matching(matching_assignment)
+
+                # print(matching_assignment)
+                # print(edges)
 
             # Run the end_round routine of the graph, to update the time_to_stay for each node
             graph.end_round_routine()

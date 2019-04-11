@@ -69,6 +69,7 @@ class Graph:
 
         return matrix
 
+    # Transform a matching matrix (composed of 0/1 values) into a list of matched edges.
     def get_edges_from_matching(self, matching_matrix):
         edges = []
 

@@ -16,7 +16,7 @@ try:
     from matching.experiment.DDA import DDA
     from matching.algorithms.Hungarian_algorithm import Hungarian_algorithm
 
-    from matching.utilities.drawing import draw_graph
+    # from matching.utilities.drawing import draw_graph
     from random import randint, random
 except (SystemError, ImportError):
     # IMPORT FOR NON-PYCHARM USERS
@@ -130,9 +130,9 @@ for day in range(num_days): # For every day the experiment is run
             # Whenever a node is going to exit the experiment run the DDA (Deferred Dynamic Acceptance) algorithm
             if len(graph.edges) > 0 and Dda.is_there_critical_seller_node(graph.nodes):
                 print("Calling DDA")
-                adjacency_matrix = graph.get_adjacency_matrix()
-                print("Adjacency matrix built")
-                matching_result, matching_assignment = Dda.perform_matching(adjacency_matrix)
+                # matching_assignment, updated_graph = Dda.perform_matching(graph)
+                # graph = updated_graph
+                #
                 print("Assignment found")
 
                 # TODO: given the results of DDA (if and what nodes to match), actually perform the matching

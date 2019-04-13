@@ -71,7 +71,7 @@ class Hungarian_algorithm:
         for i in range(0, matrix.shape[1]):
             if (np.sum(matrix[:, i] == 0) == 1):
                 j = np.argwhere(matrix[:, i] == 0).reshape(-1)[0]
-                return i, j
+                return j, i
         return False
 
     def __find_rows_single_zero(self, matrix):
@@ -120,7 +120,7 @@ class Hungarian_algorithm:
 
     def __step5(self, m, covered_rows, covered_cols):
         uncovered_rows = np.setdiff1d(np.linspace(0, m.shape[0] - 1, m.shape[0]), covered_rows).astype(int)
-        uncovered_cols = np.setdiff1d(np.linspace(0, m.shape[1] - 1, m.shape[1]), covered_rows).astype(int)
+        uncovered_cols = np.setdiff1d(np.linspace(0, m.shape[1] - 1, m.shape[1]), covered_cols).astype(int)
         min_val = np.max(m)
 
         for i in uncovered_rows.astype(int):

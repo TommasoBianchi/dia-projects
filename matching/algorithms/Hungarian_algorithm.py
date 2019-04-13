@@ -3,18 +3,36 @@ import numpy as np
 
 class Hungarian_algorithm:
 
-    def compute(self, matrix):
+    # This method take in input a numpy square matrix nxn where each cells i,j represents the weight   
+    # of the edge joining node i with node j.
+    # This method returns a matrix nxn repesenting the assignement that maximize the weight.
+    # Each cell i,j contains 1 if the edge joining i and j belong to the assignement, 0 otherwise.
+    def get_maximum_weight_assignment(self, matrix):
         m = matrix.copy()
-        self.__step1(m)
-        self.__step2(m)
+        maximum_value = m.max()
+        m = m * - 1
+        m = m + maximum_value
+        return self.__compute(m)
+    
+    # This method take in input a numpy square matrix nxn where each cells i,j represents the weight   
+    # of the edge joining node i with node j.
+    # This method returns a matrix nxn repesenting the assignement that minimize the weight.
+    # Each cell i,j contains 1 if the edge joining i and j belong to the assignement, 0 otherwise.
+    def get_minimum_weight_assignment(self, matrix):
+        return self.__compute(matrix)
+
+    def __compute(self, initial_matrix):
+        matrix = initial_matrix.copy()
+        self.__step1(matrix)
+        self.__step2(matrix)
         n_lines = 0
-        max_length = np.maximum(m.shape[0], m.shape[1])
+        max_length = np.maximum(matrix.shape[0], matrix.shape[1])
         while n_lines != max_length:
-            lines = self.__step3(m)
+            lines = self.__step3(matrix)
             n_lines = len(lines[0]) + len(lines[1])
             if (n_lines != max_length):
-                self.__step5(m, lines[0], lines[1])
-        return self.__final_assignement(matrix, m)
+                self.__step5(matrix, lines[0], lines[1])
+        return self.__final_assignement(initial_matrix, matrix)
 
     def __final_assignement(self,initial_matrix, m):
         assignement = np.zeros(m.shape, dtype = int)
@@ -58,7 +76,7 @@ class Hungarian_algorithm:
 
     def __find_rows_single_zero(self, matrix):
         for i in range(0, matrix.shape[0]):
-            if (np.sum(matrix[i, :] == 0) == 1):
+            if(np.sum(matrix[i, :] == 0) == 1):
                 j = np.argwhere(matrix[i, :] == 0).reshape(-1)[0]
                 return i, j
         return False
@@ -118,12 +136,14 @@ class Hungarian_algorithm:
         return m
 
 
-def compute(matrix):
-    hungarian = Hungarian_algorithm()
-    return hungarian.compute(matrix)
 
 # Test
-# a = np.random.randint(100, size=(3,3))
-# print (a)
-# res1 = compute(a)
-# print("\n Optimal Matchin:\n", res1[1], "\n Value: ", np.sum(res1[0]))
+#a = np.random.randint(100, size=(3,3))
+#a = np.matrix([[69, 11, 49], [45, 38, 69], [39, 4, 26]])
+
+#print (a)
+#res1 = Hungarian_algorithm().get_minimum_cost_assignment(a)
+#print("\n Optimal Matchin for minimizing cost:\n", res1[1], "\n Value: ", np.sum(res1[0]))
+
+#res1 = Hungarian_algorithm().get_maximum_cost_assignment(a)
+#print("\n Optimal Matchin for maximizing cost:\n", res1[1], "\n Value: ", np.sum(res1[0]))

@@ -53,10 +53,11 @@ class Hungarian_algorithm:
     # Remove the dummy rows/columns
     def __restore_initial_shape(self, initial_matrix, assignement):
         dif = initial_matrix.shape[0] - initial_matrix.shape[1]
-        if(dif >= 0):
+        if(dif > 0):
             return assignement[:,0:-abs(dif)]
-        else:
+        elif(dif != 0):
             return assignement[0:-abs(dif),:]
+        return assignement
 
     def __final_assignement(self,initial_matrix, m):
         assignement = np.zeros(m.shape, dtype = int)
@@ -69,7 +70,7 @@ class Hungarian_algorithm:
             assignement = self.__assignement_single_zero_lines(m,assignement)
 
         assignement = self.__restore_initial_shape(initial_matrix, assignement)
-        return np.multiply(assignement, initial_matrix), assignement
+        return assignement
     
     def __first_zero(self,m):
         return np.argwhere(m==0)[0][0], np.argwhere(m==0)[0][1]
@@ -163,16 +164,16 @@ class Hungarian_algorithm:
 
 
 # Test
-#a = np.random.randint(100, size=(5,5))
-#a = np.matrix([[72, 23, 61, 30], [35, 29, 13, 20], [67, 2, 93, 96]])
+#a = np.random.randint(100, size=(3,3))
+#a = np.matrix([[72, 23, 61], [35, 29, 13], [67, 2, 93]])
 #a = np.matrix([[102, 120, 152], [152, 139, 174], [118, 146, 260]]) #esercitazione
 #a = np.matrix([[17, 86, 46, 90], [79, 52, 62, 30], [37, 20, 36, 40]])
 #a = np.matrix([[73, 84, 4], [97, 75, 43], [66, 42, 96]])
 #a = np.matrix([[76, 31, 21, 58, 40], [50, 58, 57,94,70], [47, 69, 94,8,21], [13, 94, 81, 3, 50], [19, 46, 57, 84, 51]])
 
-#print (a)
-#res1 = Hungarian_algorithm().get_minimum_weight_assignment(a)
-#print("\n Optimal Matchin for minimizing cost:\n", res1[1], "\n Value: ", np.sum(res1[0]))
+print (a)
+res1 = Hungarian_algorithm().get_minimum_weight_assignment(a)
+print("\n Optimal Matchin for minimizing cost:\n", res1)
 
-#res2 = Hungarian_algorithm().get_maximum_weight_assignment(a)
-#print("\n Optimal Matchin for maximizing cost:\n", res2[1], "\n Value: ", np.sum(res2[0]))
+res2 = Hungarian_algorithm().get_maximum_weight_assignment(a)
+print("\n Optimal Matchin for maximizing cost:\n", res2)

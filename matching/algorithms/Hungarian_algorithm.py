@@ -171,9 +171,9 @@ class Hungarian_algorithm:
 #a = np.matrix([[73, 84, 4], [97, 75, 43], [66, 42, 96]])
 #a = np.matrix([[76, 31, 21, 58, 40], [50, 58, 57,94,70], [47, 69, 94,8,21], [13, 94, 81, 3, 50], [19, 46, 57, 84, 51]])
 
-print (a)
-res1 = Hungarian_algorithm().get_minimum_weight_assignment(a)
-print("\n Optimal Matchin for minimizing cost:\n", res1)
+#print (a)
+#res1 = Hungarian_algorithm().get_minimum_weight_assignment(a)
+#print("\n Optimal Matchin for minimizing cost:\n", res1)
 
-res2 = Hungarian_algorithm().get_maximum_weight_assignment(a)
-print("\n Optimal Matchin for maximizing cost:\n", res2)
+#res2 = Hungarian_algorithm().get_maximum_weight_assignment(a)
+#print("\n Optimal Matchin for maximizing cost:\n", res2)

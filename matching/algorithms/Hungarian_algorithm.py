@@ -30,7 +30,7 @@ class Hungarian_algorithm:
 
     def __compute(self, initial_matrix):
         matrix = self.__copy(initial_matrix) #matrix = initial_matrix.copy()
-        #matrix = self.__pad_matrix(matrix,0)
+        matrix = self.__pad_matrix(matrix,0)
         self.__step1(matrix)
         self.__step2(matrix)
         n_lines = 0
@@ -63,12 +63,12 @@ class Hungarian_algorithm:
         assignement = self.__assignement_single_zero_lines(m, assignement)
         while(np.sum(m==0)>0):
             i,j = self.__first_zero(m)
-            assignement[i,j] = i
+            assignement[i,j] = 1
             m[i,:] += 1
             m[:,j] += 1
             assignement = self.__assignement_single_zero_lines(m,assignement)
 
-        #assignement = self.__restore_initial_shape(initial_matrix, assignement)
+        assignement = self.__restore_initial_shape(initial_matrix, assignement)
         return np.multiply(assignement, initial_matrix), assignement
     
     def __first_zero(self,m):
@@ -163,16 +163,16 @@ class Hungarian_algorithm:
 
 
 # Test
-a = np.random.randint(100, size=(5,5))
-#a = np.matrix([[72, 23, 61], [35, 29, 13], [67, 2, 93]])
+#a = np.random.randint(100, size=(5,5))
+#a = np.matrix([[72, 23, 61, 30], [35, 29, 13, 20], [67, 2, 93, 96]])
 #a = np.matrix([[102, 120, 152], [152, 139, 174], [118, 146, 260]]) #esercitazione
-#a = np.matrix([[17, 86, 46], [79, 52, 62], [37, 20, 36]])
+#a = np.matrix([[17, 86, 46, 90], [79, 52, 62, 30], [37, 20, 36, 40]])
 #a = np.matrix([[73, 84, 4], [97, 75, 43], [66, 42, 96]])
 #a = np.matrix([[76, 31, 21, 58, 40], [50, 58, 57,94,70], [47, 69, 94,8,21], [13, 94, 81, 3, 50], [19, 46, 57, 84, 51]])
 
-print (a)
-res1 = Hungarian_algorithm().get_minimum_weight_assignment(a)
-print("\n Optimal Matchin for minimizing cost:\n", res1[1], "\n Value: ", np.sum(res1[0]))
+#print (a)
+#res1 = Hungarian_algorithm().get_minimum_weight_assignment(a)
+#print("\n Optimal Matchin for minimizing cost:\n", res1[1], "\n Value: ", np.sum(res1[0]))
 
-res2 = Hungarian_algorithm().get_maximum_weight_assignment(a)
-print("\n Optimal Matchin for maximizing cost:\n", res2[1], "\n Value: ", np.sum(res2[0]))
+#res2 = Hungarian_algorithm().get_maximum_weight_assignment(a)
+#print("\n Optimal Matchin for maximizing cost:\n", res2[1], "\n Value: ", np.sum(res2[0]))

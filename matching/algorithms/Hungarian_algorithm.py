@@ -8,7 +8,7 @@ class Hungarian_algorithm:
     # This method returns a matrix nxn repesenting the assignement that maximize the weight.
     # Each cell i,j contains 1 if the edge joining i and j belong to the assignement, 0 otherwise.
     def get_maximum_weight_assignment(self, matrix):
-        m = matrix.copy()
+        m = self.__copy(matrix) #matrix.copy()
         maximum_value = m.max()
         m = m * - 1
         m = m + maximum_value
@@ -21,8 +21,16 @@ class Hungarian_algorithm:
     def get_minimum_weight_assignment(self, matrix):
         return self.__compute(matrix)
 
+    def __copy(self, matrix):
+        copy_matrix = np.empty(matrix.shape, dtype = int) 
+        for i in range(0,matrix.shape[0]):
+            for j in range(0,matrix.shape[1]):
+                copy_matrix[i,j] = matrix[i,j]
+        return copy_matrix
+
     def __compute(self, initial_matrix):
-        matrix = initial_matrix.copy()
+        matrix = self.__copy(initial_matrix) #matrix = initial_matrix.copy()
+        #matrix = self.__pad_matrix(matrix,0)
         self.__step1(matrix)
         self.__step2(matrix)
         n_lines = 0
@@ -34,6 +42,22 @@ class Hungarian_algorithm:
                 self.__step5(matrix, lines[0], lines[1])
         return self.__final_assignement(initial_matrix, matrix)
 
+    def __pad_matrix(self, matrix,val):
+        (a,b)=matrix.shape
+        if a>b:
+            padding=((0,0),(0,a-b))
+        else:
+            padding=((0,b-a),(0,0))
+        return np.pad(matrix,padding,mode='constant',constant_values=val)
+
+    # Remove the dummy rows/columns
+    def __restore_initial_shape(self, initial_matrix, assignement):
+        dif = initial_matrix.shape[0] - initial_matrix.shape[1]
+        if(dif >= 0):
+            return assignement[:,0:-abs(dif)]
+        else:
+            return assignement[0:-abs(dif),:]
+
     def __final_assignement(self,initial_matrix, m):
         assignement = np.zeros(m.shape, dtype = int)
         assignement = self.__assignement_single_zero_lines(m, assignement)
@@ -44,7 +68,8 @@ class Hungarian_algorithm:
             m[:,j] += 1
             assignement = self.__assignement_single_zero_lines(m,assignement)
 
-        return assignement* initial_matrix, assignement
+        #assignement = self.__restore_initial_shape(initial_matrix, assignement)
+        return np.multiply(assignement, initial_matrix), assignement
     
     def __first_zero(self,m):
         return np.argwhere(m==0)[0][0], np.argwhere(m==0)[0][1]
@@ -77,7 +102,7 @@ class Hungarian_algorithm:
     def __find_rows_single_zero(self, matrix):
         for i in range(0, matrix.shape[0]):
             if(np.sum(matrix[i, :] == 0) == 1):
-                j = np.argwhere(matrix[i, :] == 0).reshape(-1)[0]
+                j = np.argwhere(matrix[i, :] == 0).reshape(-1)[0] 
                 return i, j
         return False
 
@@ -97,7 +122,7 @@ class Hungarian_algorithm:
         for i in range(0, m.shape[0]):  # NOTE!!: changed dim into m.shape[0] (by Tommy)
             for j in range(0, m.shape[1]):  # NOTE!!: changed dim into m.shape[1] (by Tommy)
                 if (m[i, j] == 0 and np.sum(assignments[:, j]) == 0 and np.sum(assignments[i, :]) == 0):
-                    assignments[i, j] = i
+                    assignments[i, j] = 1
                     assigned = np.append(assigned, i)
 
         rows = np.linspace(0, dim - 1, dim).astype(int)
@@ -114,7 +139,7 @@ class Hungarian_algorithm:
             new_marked_rows = np.array([], dtype=int)
 
             for nc in new_marked_cols:
-                new_marked_rows = np.append(new_marked_rows, np.argwhere(assignments[:, nc] == i).reshape(-1))
+                new_marked_rows = np.append(new_marked_rows, np.argwhere(assignments[:, nc] == 1).reshape(-1))
             marked_rows = np.unique(np.append(marked_rows, new_marked_rows))
         return np.setdiff1d(rows, marked_rows), np.unique(marked_cols)
 
@@ -138,12 +163,16 @@ class Hungarian_algorithm:
 
 
 # Test
-#a = np.random.randint(100, size=(3,3))
-#a = np.matrix([[69, 11, 49], [45, 38, 69], [39, 4, 26]])
+a = np.random.randint(100, size=(5,5))
+#a = np.matrix([[72, 23, 61], [35, 29, 13], [67, 2, 93]])
+#a = np.matrix([[102, 120, 152], [152, 139, 174], [118, 146, 260]]) #esercitazione
+#a = np.matrix([[17, 86, 46], [79, 52, 62], [37, 20, 36]])
+#a = np.matrix([[73, 84, 4], [97, 75, 43], [66, 42, 96]])
+#a = np.matrix([[76, 31, 21, 58, 40], [50, 58, 57,94,70], [47, 69, 94,8,21], [13, 94, 81, 3, 50], [19, 46, 57, 84, 51]])
 
-#print (a)
-#res1 = Hungarian_algorithm().get_minimum_cost_assignment(a)
-#print("\n Optimal Matchin for minimizing cost:\n", res1[1], "\n Value: ", np.sum(res1[0]))
+print (a)
+res1 = Hungarian_algorithm().get_minimum_weight_assignment(a)
+print("\n Optimal Matchin for minimizing cost:\n", res1[1], "\n Value: ", np.sum(res1[0]))
 
-#res1 = Hungarian_algorithm().get_maximum_cost_assignment(a)
-#print("\n Optimal Matchin for maximizing cost:\n", res1[1], "\n Value: ", np.sum(res1[0]))
+res2 = Hungarian_algorithm().get_maximum_weight_assignment(a)
+print("\n Optimal Matchin for maximizing cost:\n", res2[1], "\n Value: ", np.sum(res2[0]))

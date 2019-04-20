@@ -130,8 +130,8 @@ for day in range(num_days): # For every day the experiment is run
             # Whenever a node is going to exit the experiment run the DDA (Deferred Dynamic Acceptance) algorithm
             if len(graph.edges) > 0 and Dda.is_there_critical_seller_node(graph.nodes):
                 print("Calling DDA")
-                # matching_assignment, updated_graph = Dda.perform_matching(graph)
-                # graph = updated_graph
+                matching_assignment, updated_graph = Dda.perform_matching(graph)
+                graph = updated_graph
                 #
                 print("Assignment found")
 

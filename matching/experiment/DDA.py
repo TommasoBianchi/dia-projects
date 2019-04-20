@@ -25,10 +25,10 @@ class DDA:
     # Return the list of critical nodes of the edge
     def critical_nodes(self, edge):
         critical_nodes = []
-        if edge.node1.is_critical:
+        if edge.node1.is_critical():
             critical_nodes.append(edge.node1)
 
-        if edge.node2.is_critical:
+        if edge.node2.is_critical():
             critical_nodes.append(edge.node2)
 
         return len(critical_nodes)
@@ -60,7 +60,9 @@ class DDA:
     # of the final assignment and the graph with the nodes updated with the coin toss resulting labels
     def perform_matching(self, graph):
         adjacency_matrix = graph.get_adjacency_matrix()
-        _, matching_assignment = self.matching_algorithm.compute(adjacency_matrix)
+        from matching.algorithms.Hungarian_algorithm import Hungarian_algorithm
+
+        matching_assignment = self.matching_algorithm.get_maximum_weight_assignment(adjacency_matrix)
 
         # First node in the edge is the left ( seller ) one and the second is the right one ( buyer )
         matching_edges = graph.get_edges_from_matching(matching_assignment)

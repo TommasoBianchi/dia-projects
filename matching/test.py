@@ -43,15 +43,17 @@ except (SystemError, ImportError):
 
     import matplotlib.pyplot as plt
 
+import math
+
 ###############################################
 # Configurations (for now, kinda random)
 ###############################################
 
-num_days = 10    # Number of days the experiment is run
-phase_lengths = [6] # Duration of each phase in round (phases restart identically each day)
+num_days = 25    # Number of days the experiment is run
+phase_lengths = [10, 10, 10, 10] # Duration of each phase in round (phases restart identically each day)
 num_phases = len(phase_lengths)
-num_left_classes = 2
-num_right_classes = 2
+num_left_classes = 3
+num_right_classes = 3
 
 ###############################################
 # Build environment
@@ -89,6 +91,8 @@ Dda = DDA(Hungarian_algorithm())
 
 # Instantiate the main Graph
 graph = Graph()
+# Instantiate the clairvoyant Graph
+clairvoyant_graph = Graph()
 
 # Build the Class_Algos from the ids of the Class_Envs
 left_classes_ids = [c.id for c in env_classes[0] if c.is_left]
@@ -111,18 +115,23 @@ for i in left_classes_ids:
 rewards_by_day = []
 all_rewards = []
 
+clairvoyant_all_rewards = []
+
 for day in range(num_days): # For every day the experiment is run
     print("------ Day " + str(day + 1) + " ------")
 
     day_rewards = []
 
     for (phase_id, phase_length) in enumerate(phase_lengths):   # For every phase of the day
-        print("---- Phase " + str(phase_id + 1) + " ----")
+        # print("---- Phase " + str(phase_id + 1) + " ----")
 
         phase_rewards = []
 
         for round in range(phase_length):   # For every round in the phase
-            print("-- Round " + str(round + 1) + " --")
+            # print("-- Round " + str(round + 1) + " --")
+
+            round_reward = 0
+            round_clairvoyant_reward = 0
 
             # Sample new nodes from the environment
             new_nodes = environment.get_new_nodes(phase_id)
@@ -132,19 +141,27 @@ for day in range(num_days): # For every day the experiment is run
                 node_class = [c for c in algo_classes if c.id == class_id][0]
                 graph.add_node(node_class, time_to_stay)
 
+                clairvoyant_graph.add_node(node_class, time_to_stay)
+
             # Update the estimates of the weights of the graph (i.e. beta sample/UCB1 bound)
             graph.update_weights()
 
+            # Update the clairvoyant graph with the real weights
+            for edge in clairvoyant_graph.edges:
+                node1_env_class = [c for c in env_classes[phase_id] if c.id == edge.node1.node_class.id][0]
+                edge_data = node1_env_class.edge_data[edge.node2.node_class.id]
+                edge.weight = edge_data.weight_distribution.p * edge_data.constant_weight
+
             # Draw the graph (for debugging)
-            #draw_graph(graph)
+            # draw_graph(graph)
 
             # Whenever a node is going to exit the experiment run the DDA (Deferred Dynamic Acceptance) algorithm
             if len(graph.edges) > 0 and Dda.is_there_critical_seller_node(graph.nodes):
-                print("Calling DDA")
+                # print("Calling DDA")
                 matching_edges, updated_graph = Dda.perform_matching(graph)
                 graph = updated_graph
                 #
-                print("Assignment found")
+                # print("Assignment found")
 
                 # Given the results of DDA (if and what nodes to match), actually perform the matching
                 for edge in matching_edges:
@@ -152,8 +169,7 @@ for day in range(num_days): # For every day the experiment is run
                     matching_result, matching_weight = environment.get_reward(edge.node1.node_class.id, edge.node2.node_class.id, phase_id)
                     
                     reward = matching_result * matching_weight
-                    phase_rewards.append(reward)
-                    all_rewards.append(reward)
+                    round_reward += reward
 
                     node1_class = [c for c in algo_classes if c.id == edge.node1.node_class.id][0]
                     edge_data = node1_class.edge_data[edge.node2.node_class.id]
@@ -173,8 +189,31 @@ for day in range(num_days): # For every day the experiment is run
                     graph.remove_node(edge.node1)
                     graph.remove_node(edge.node2)
 
+            if len(clairvoyant_graph.edges) > 0 and Dda.is_there_critical_seller_node(clairvoyant_graph.nodes):
+                matching_edges, updated_graph = Dda.perform_matching(clairvoyant_graph)
+                clairvoyant = updated_graph
+
+                # Given the results of DDA (if and what nodes to match), actually perform the matching
+                for edge in matching_edges:
+                    # Draw rewards and update distributions for each matching performed
+                    matching_result, matching_weight = environment.get_reward(edge.node1.node_class.id, edge.node2.node_class.id, phase_id)
+                    
+                    reward = matching_result * matching_weight
+                    round_clairvoyant_reward += reward
+
+                    # Remove matched nodes from the graph
+                    clairvoyant_graph.remove_node(edge.node1)
+                    clairvoyant_graph.remove_node(edge.node2)
+
             # Run the end_round routine of the graph, to update the time_to_stay for each node
             graph.end_round_routine()
+
+            clairvoyant_graph.end_round_routine()
+
+            phase_rewards.append(round_reward)
+            all_rewards.append(round_reward)
+
+            clairvoyant_all_rewards.append(round_clairvoyant_reward)
 
         # End of phase
         day_rewards.append(phase_rewards)
@@ -183,6 +222,23 @@ for day in range(num_days): # For every day the experiment is run
     rewards_by_day.append(day_rewards)
 
 # Plotting
-print(all_rewards)
-plt.plot([sum(all_rewards[:i]) for i in range(len(all_rewards))])
+
+cum_rewards = [sum(all_rewards[:i]) for i in range(len(all_rewards))]
+cum_clairvoyant_rewards = [sum(clairvoyant_all_rewards[:i]) for i in range(len(clairvoyant_all_rewards))]
+
+# print(all_rewards)
+# print(clairvoyant_all_rewards)
+
+plt.plot(cum_rewards)
+plt.plot(cum_clairvoyant_rewards)
+plt.legend(['Thompson sampling', 'Clairvoyant'])
+plt.title('Total cumulative rewards')
+plt.show()
+
+plt.plot([cum_clairvoyant_rewards[i] - cum_rewards[i] for i in range(len(cum_rewards))])
+plt.title('Total cumulative regret')
+plt.show()
+
+plt.plot([(cum_clairvoyant_rewards[i] - cum_rewards[i]) / (i+1) for i in range(len(cum_rewards))])
+plt.title('Total average regret')
 plt.show()

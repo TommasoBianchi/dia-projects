@@ -33,7 +33,7 @@ class Environment:
 
 	# Sample a reward for matching a node from class_1 and another one from class_2.
 	# Returns a pair (bernoulli_realization, constant_weight).
-	def get_reward(class1_id, class2_id, phase_id):
+	def get_reward(self, class1_id, class2_id, phase_id):
 		classes = self.classes[phase_id]
 		class1 = [c for c in classes if c.id == class1_id][0]
 		edge_data = class1.edge_data[class2_id]

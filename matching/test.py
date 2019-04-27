@@ -41,15 +41,17 @@ except (SystemError, ImportError):
     from utilities.drawing import draw_graph
     from random import randint, random
 
+    import matplotlib.pyplot as plt
+
 ###############################################
 # Configurations (for now, kinda random)
 ###############################################
 
-num_days = 1    # Number of days the experiment is run
+num_days = 10    # Number of days the experiment is run
 phase_lengths = [6] # Duration of each phase in round (phases restart identically each day)
 num_phases = len(phase_lengths)
 num_left_classes = 2
-num_right_classes = 1
+num_right_classes = 2
 
 ###############################################
 # Build environment
@@ -106,10 +108,19 @@ for i in left_classes_ids:
 # Main experiment loop
 ###############################################
 
+rewards_by_day = []
+all_rewards = []
+
 for day in range(num_days): # For every day the experiment is run
     print("------ Day " + str(day + 1) + " ------")
+
+    day_rewards = []
+
     for (phase_id, phase_length) in enumerate(phase_lengths):   # For every phase of the day
         print("---- Phase " + str(phase_id + 1) + " ----")
+
+        phase_rewards = []
+
         for round in range(phase_length):   # For every round in the phase
             print("-- Round " + str(round + 1) + " --")
 
@@ -130,19 +141,48 @@ for day in range(num_days): # For every day the experiment is run
             # Whenever a node is going to exit the experiment run the DDA (Deferred Dynamic Acceptance) algorithm
             if len(graph.edges) > 0 and Dda.is_there_critical_seller_node(graph.nodes):
                 print("Calling DDA")
-                matching_assignment, updated_graph = Dda.perform_matching(graph)
+                matching_edges, updated_graph = Dda.perform_matching(graph)
                 graph = updated_graph
                 #
                 print("Assignment found")
 
-                # TODO: given the results of DDA (if and what nodes to match), actually perform the matching
-                # TODO: draw rewards and update distributions for each matching performed
-                # TODO: remove matched nodes from the graph
+                # Given the results of DDA (if and what nodes to match), actually perform the matching
+                for edge in matching_edges:
+                    # Draw rewards and update distributions for each matching performed
+                    matching_result, matching_weight = environment.get_reward(edge.node1.node_class.id, edge.node2.node_class.id, phase_id)
+                    
+                    reward = matching_result * matching_weight
+                    phase_rewards.append(reward)
+                    all_rewards.append(reward)
 
-                # edges = graph.get_edges_from_matching(matching_assignment)
+                    node1_class = [c for c in algo_classes if c.id == edge.node1.node_class.id][0]
+                    edge_data = node1_class.edge_data[edge.node2.node_class.id]
 
-                # print(matching_assignment)
-                # print(edges)
+                    # TS update
+                    edge_data.distribution.update_parameters([edge_data.distribution.alpha + matching_result,
+                                                             edge_data.distribution.beta + (1 - matching_result)])
+                    if edge_data.weight_estimation_samples == 0:
+                        edge_data.estimated_weight = matching_weight
+                    else:
+                        edge_data.estimated_weight += (matching_weight - edge_data.estimated_weight) / edge_data.weight_estimation_samples
+                    edge_data.weight_estimation_samples += 1
+
+                    # TODO: UCB1 update
+
+                    # Remove matched nodes from the graph
+                    graph.remove_node(edge.node1)
+                    graph.remove_node(edge.node2)
 
             # Run the end_round routine of the graph, to update the time_to_stay for each node
             graph.end_round_routine()
+
+        # End of phase
+        day_rewards.append(phase_rewards)
+
+    # End of day
+    rewards_by_day.append(day_rewards)
+
+# Plotting
+print(all_rewards)
+plt.plot([sum(all_rewards[:i]) for i in range(len(all_rewards))])
+plt.show()

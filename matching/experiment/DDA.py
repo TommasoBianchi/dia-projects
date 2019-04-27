@@ -1,6 +1,14 @@
 import random
 from operator import itemgetter
 
+try:
+    # IMPORT FOR PYCHARM USERS
+
+    from matching.algorithms.Hungarian_algorithm import Hungarian_algorithm
+except (SystemError, ImportError):
+    # IMPORT FOR NON-PYCHARM USERS
+
+    from algorithms.Hungarian_algorithm import Hungarian_algorithm       
 
 class DDA:
     def __init__(self, matching_algorithm):
@@ -60,7 +68,6 @@ class DDA:
     # of the final assignment and the graph with the nodes updated with the coin toss resulting labels
     def perform_matching(self, graph):
         adjacency_matrix = graph.get_adjacency_matrix()
-        from matching.algorithms.Hungarian_algorithm import Hungarian_algorithm
 
         matching_assignment = self.matching_algorithm.get_maximum_weight_assignment(adjacency_matrix)
 

@@ -16,6 +16,8 @@ try:
     from matching.experiment.DDA import DDA
     from matching.algorithms.Hungarian_algorithm import Hungarian_algorithm
 
+    from matching.config.random_config import get_configuration
+
     # from matching.utilities.drawing import draw_graph
     from random import randint, random
 except (SystemError, ImportError):
@@ -37,6 +39,8 @@ except (SystemError, ImportError):
 
     from experiment.DDA import DDA
     from algorithms.Hungarian_algorithm import Hungarian_algorithm
+
+    from config.random_config import get_configuration
     
     from utilities.drawing import draw_graph
     from random import randint, random
@@ -46,37 +50,38 @@ except (SystemError, ImportError):
 import math
 
 ###############################################
-# Configurations (for now, kinda random)
+# Configurations
 ###############################################
 
 num_days = 25    # Number of days the experiment is run
-phase_lengths = [10, 10, 10, 10] # Duration of each phase in round (phases restart identically each day)
-num_phases = len(phase_lengths)
-num_left_classes = 3
-num_right_classes = 3
 
 ###############################################
-# Build environment
+# Build environment (from config file)
 ###############################################
 
 env_classes = []
-for _ in range(num_phases):
+phase_lengths = []
+
+configuration = get_configuration() # NOTE: for now this generate a random configuration
+for phase_data in configuration['phase_data']:
+    phase_lengths.append(phase_data['duration'])
     phase_env_classes = []
 
-    for id in range(num_left_classes):
-        phase_env_classes.append(Class_Env(id, True, Gaussian(2, 1), Uniform_Discrete(1, 3)))
-
-    for id in range(num_right_classes):
-        phase_env_classes.append(
-            Class_Env(num_right_classes + id + 1, False, Gaussian(2, 1), Uniform_Discrete(2, 5)))
-
-    for i in range(num_left_classes):
-        for j in range(num_right_classes):
-            class_edge = Class_Env_Edge(Bernoulli(random()), randint(1, 10))
-            l_class = [c for c in phase_env_classes if c.id == i][0]
-            r_class = [c for c in phase_env_classes if c.id == j + num_right_classes + 1][0]
-            l_class.set_edge_data(r_class, class_edge)
-            r_class.set_edge_data(l_class, class_edge)
+    for (id, ldata) in enumerate(phase_data['left_classes']):
+        phase_env_classes.append(Class_Env(id, True, 
+                                           Gaussian(ldata['new_node_rate_mean'], ldata['new_node_rate_variance']), 
+                                           Uniform_Discrete(ldata['time_to_stay_min'], ldata['time_to_stay_max'])))
+    num_left_classes = len(phase_data['left_classes'])
+    for (id, ldata) in enumerate(phase_data['right_classes']):
+        phase_env_classes.append(Class_Env(id + num_left_classes + 1, False, 
+                                           Gaussian(ldata['new_node_rate_mean'], ldata['new_node_rate_variance']), 
+                                           Uniform_Discrete(ldata['time_to_stay_min'], ldata['time_to_stay_max'])))
+    for (ids, edge_data) in phase_data['edge_data'].items():
+        class_edge = Class_Env_Edge(Bernoulli(edge_data['mean']), edge_data['weight'])
+        l_class = [c for c in phase_env_classes if c.id == ids[0]][0]
+        r_class = [c for c in phase_env_classes if c.id == ids[1] + num_left_classes + 1][0]
+        l_class.set_edge_data(r_class, class_edge)
+        r_class.set_edge_data(l_class, class_edge)
 
     env_classes.append(phase_env_classes)
 

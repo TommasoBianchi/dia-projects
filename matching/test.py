@@ -53,7 +53,7 @@ import math
 # Configurations
 ###############################################
 
-num_days = 25    # Number of days the experiment is run
+num_days = 10    # Number of days the experiment is run
 
 ###############################################
 # Build environment (from config file)
@@ -158,7 +158,7 @@ for day in range(num_days): # For every day the experiment is run
                 edge.weight = edge_data.weight_distribution.p * edge_data.constant_weight
 
             # Draw the graph (for debugging)
-            # draw_graph(graph)
+            #draw_graph(graph)
 
             # Whenever a node is going to exit the experiment run the DDA (Deferred Dynamic Acceptance) algorithm
             if len(graph.edges) > 0 and Dda.is_there_critical_seller_node(graph.nodes):

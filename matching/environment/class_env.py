@@ -9,3 +9,7 @@ class Class_Env:
 	# Set the data (e.g. distribution, estimated constant weight) pertaining to the pair (this_algo_class, other_class).
 	def set_edge_data(self, other_class, edge_data):
 		self.edge_data[other_class.id] = edge_data
+
+	# print representation
+	def __repr__(self):
+		return "Environment Class " + str(self.id) + (" (left)" if self.is_left else " (right)")

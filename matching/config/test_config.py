@@ -64,8 +64,8 @@ configuration = {
 									'weight': 5
 								},
 								(1, 2): {
-									'mean': 0.5,
-									'weight': 3.5
+									'mean': 0.05,
+									'weight': 18
 								},
 								(2, 0): {
 									'mean': 0.3,

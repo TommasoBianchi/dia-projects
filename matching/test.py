@@ -40,7 +40,8 @@ except (SystemError, ImportError):
     from experiment.DDA import DDA
     from algorithms.Hungarian_algorithm import Hungarian_algorithm
 
-    from config.random_config import get_configuration
+    #from config.random_config import get_configuration
+    from config.test_config import get_configuration
     
     from utilities.drawing import draw_graph
     from random import randint, random
@@ -53,7 +54,7 @@ import math
 # Configurations
 ###############################################
 
-num_days = 10    # Number of days the experiment is run
+num_days = 150    # Number of days the experiment is run
 
 ###############################################
 # Build environment (from config file)
@@ -73,19 +74,21 @@ for phase_data in configuration['phase_data']:
                                            Uniform_Discrete(ldata['time_to_stay_min'], ldata['time_to_stay_max'])))
     num_left_classes = len(phase_data['left_classes'])
     for (id, ldata) in enumerate(phase_data['right_classes']):
-        phase_env_classes.append(Class_Env(id + num_left_classes + 1, False, 
+        phase_env_classes.append(Class_Env(id + num_left_classes, False, 
                                            Gaussian(ldata['new_node_rate_mean'], ldata['new_node_rate_variance']), 
                                            Uniform_Discrete(ldata['time_to_stay_min'], ldata['time_to_stay_max'])))
     for (ids, edge_data) in phase_data['edge_data'].items():
         class_edge = Class_Env_Edge(Bernoulli(edge_data['mean']), edge_data['weight'])
         l_class = [c for c in phase_env_classes if c.id == ids[0]][0]
-        r_class = [c for c in phase_env_classes if c.id == ids[1] + num_left_classes + 1][0]
+        r_class = [c for c in phase_env_classes if c.id == ids[1] + num_left_classes][0]
         l_class.set_edge_data(r_class, class_edge)
         r_class.set_edge_data(l_class, class_edge)
 
     env_classes.append(phase_env_classes)
 
 environment = Environment(env_classes)
+
+print(env_classes)
 
 ###############################################
 # Setup the experiment
@@ -176,6 +179,9 @@ for day in range(num_days): # For every day the experiment is run
                     reward = matching_result * matching_weight
                     round_reward += reward
 
+                    # print("Reward for " + str((edge.node1.node_class.id, edge.node2.node_class.id)) + \
+                    #             " is " + str((matching_result, matching_weight)))
+
                     node1_class = [c for c in algo_classes if c.id == edge.node1.node_class.id][0]
                     edge_data = node1_class.edge_data[edge.node2.node_class.id]
 
@@ -196,14 +202,14 @@ for day in range(num_days): # For every day the experiment is run
 
             if len(clairvoyant_graph.edges) > 0 and Dda.is_there_critical_seller_node(clairvoyant_graph.nodes):
                 matching_edges, updated_graph = Dda.perform_matching(clairvoyant_graph)
-                clairvoyant = updated_graph
+                clairvoyant_graph = updated_graph
 
                 # Given the results of DDA (if and what nodes to match), actually perform the matching
                 for edge in matching_edges:
                     # Draw rewards and update distributions for each matching performed
                     matching_result, matching_weight = environment.get_reward(edge.node1.node_class.id, edge.node2.node_class.id, phase_id)
                     
-                    reward = matching_result * matching_weight
+                    reward = edge.weight#matching_result * matching_weight
                     round_clairvoyant_reward += reward
 
                     # Remove matched nodes from the graph

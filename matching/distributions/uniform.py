@@ -1,4 +1,10 @@
-from distributions.probability_distribution import Probability_Distribution
+try:
+	# IMPORT FOR PYCHARM USERS
+	from matching.distributions.probability_distribution import Probability_Distribution
+except (SystemError, ImportError):
+	# IMPORT FOR NON-PYCHARM USERS
+	from distributions.probability_distribution import Probability_Distribution
+	
 import random
 
 class Uniform(Probability_Distribution):

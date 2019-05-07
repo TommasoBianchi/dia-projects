@@ -22,7 +22,7 @@ class Hungarian_algorithm:
         return self.__compute(matrix)
 
     def __copy(self, matrix):
-        copy_matrix = np.empty(matrix.shape, dtype = int) 
+        copy_matrix = np.empty(matrix.shape, dtype = float) 
         for i in range(0,matrix.shape[0]):
             for j in range(0,matrix.shape[1]):
                 copy_matrix[i,j] = matrix[i,j]

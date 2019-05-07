@@ -16,7 +16,8 @@ try:
     from matching.experiment.DDA import DDA
     from matching.algorithms.Hungarian_algorithm import Hungarian_algorithm
 
-    from matching.config.random_config import get_configuration
+    from matching.config.random_config import get_configuration as get_random_configuration
+    from matching.config.test_config import get_configuration as get_test_configuration
 
     # from matching.utilities.drawing import draw_graph
     from random import randint, random
@@ -40,8 +41,8 @@ except (SystemError, ImportError):
     from experiment.DDA import DDA
     from algorithms.Hungarian_algorithm import Hungarian_algorithm
 
-    #from config.random_config import get_configuration
-    from config.test_config import get_configuration
+    from config.random_config import get_configuration as get_random_configuration
+    from config.test_config import get_configuration as get_test_configuration
     
     from utilities.drawing import draw_graph
     from random import randint, random
@@ -54,7 +55,7 @@ import math
 # Configurations
 ###############################################
 
-num_days = 150    # Number of days the experiment is run
+num_days = 5    # Number of days the experiment is run
 
 ###############################################
 # Build environment (from config file)
@@ -63,7 +64,7 @@ num_days = 150    # Number of days the experiment is run
 env_classes = []
 phase_lengths = []
 
-configuration = get_configuration() # NOTE: for now this generate a random configuration
+configuration = get_test_configuration()
 for phase_data in configuration['phase_data']:
     phase_lengths.append(phase_data['duration'])
     phase_env_classes = []
@@ -117,6 +118,16 @@ for i in left_classes_ids:
         r_class.set_edge_data(l_class, class_edge)
 
 ###############################################
+# Utility functions (note: some are implemented as clojures)
+###############################################
+
+def get_algo_class(class_id):
+    return [c for c in algo_classes if c.id == class_id][0]
+
+def get_env_class(class_id, phase_id):
+    return [c for c in env_classes[phase_id] if c.id == class_id][0]
+
+###############################################
 # Main experiment loop
 ###############################################
 
@@ -146,9 +157,8 @@ for day in range(num_days): # For every day the experiment is run
 
             # Add those new nodes to the graph (mapping the id returned by the environment into the correct Class_Algo)
             for (class_id, time_to_stay) in new_nodes:
-                node_class = [c for c in algo_classes if c.id == class_id][0]
+                node_class = get_algo_class(class_id)
                 graph.add_node(node_class, time_to_stay)
-
                 clairvoyant_graph.add_node(node_class, time_to_stay)
 
             # Update the estimates of the weights of the graph (i.e. beta sample/UCB1 bound)
@@ -156,7 +166,7 @@ for day in range(num_days): # For every day the experiment is run
 
             # Update the clairvoyant graph with the real weights
             for edge in clairvoyant_graph.edges:
-                node1_env_class = [c for c in env_classes[phase_id] if c.id == edge.node1.node_class.id][0]
+                node1_env_class = get_env_class(edge.node1.node_class.id, phase_id)
                 edge_data = node1_env_class.edge_data[edge.node2.node_class.id]
                 edge.weight = edge_data.weight_distribution.p * edge_data.constant_weight
 
@@ -164,12 +174,8 @@ for day in range(num_days): # For every day the experiment is run
             #draw_graph(graph)
 
             # Whenever a node is going to exit the experiment run the DDA (Deferred Dynamic Acceptance) algorithm
-            if len(graph.edges) > 0 and Dda.is_there_critical_seller_node(graph.nodes):
-                # print("Calling DDA")
-                matching_edges, updated_graph = Dda.perform_matching(graph)
-                graph = updated_graph
-                #
-                # print("Assignment found")
+            if len(graph.edges) > 0 and Dda.is_there_critical_node(graph.nodes):
+                matching_edges = Dda.perform_matching(graph)
 
                 # Given the results of DDA (if and what nodes to match), actually perform the matching
                 for edge in matching_edges:
@@ -179,37 +185,30 @@ for day in range(num_days): # For every day the experiment is run
                     reward = matching_result * matching_weight
                     round_reward += reward
 
-                    # print("Reward for " + str((edge.node1.node_class.id, edge.node2.node_class.id)) + \
-                    #             " is " + str((matching_result, matching_weight)))
-
-                    node1_class = [c for c in algo_classes if c.id == edge.node1.node_class.id][0]
+                    node1_class = get_algo_class(edge.node1.node_class.id)
                     edge_data = node1_class.edge_data[edge.node2.node_class.id]
 
                     # TS update
-                    edge_data.distribution.update_parameters([edge_data.distribution.alpha + matching_result,
-                                                             edge_data.distribution.beta + (1 - matching_result)])
-                    if edge_data.weight_estimation_samples == 0:
-                        edge_data.estimated_weight = matching_weight
-                    else:
-                        edge_data.estimated_weight += (matching_weight - edge_data.estimated_weight) / edge_data.weight_estimation_samples
-                    edge_data.weight_estimation_samples += 1
-
+                    edge_data.distribution.update_parameters([matching_result, 1 - matching_result])
                     # TODO: UCB1 update
+
+                    # Update estimate of constant weight
+                    edge_data.update_estimated_weight(matching_weight)
 
                     # Remove matched nodes from the graph
                     graph.remove_node(edge.node1)
                     graph.remove_node(edge.node2)
 
-            if len(clairvoyant_graph.edges) > 0 and Dda.is_there_critical_seller_node(clairvoyant_graph.nodes):
-                matching_edges, updated_graph = Dda.perform_matching(clairvoyant_graph)
-                clairvoyant_graph = updated_graph
+            # DDA for the clairvoyant algorithm
+            if len(clairvoyant_graph.edges) > 0 and Dda.is_there_critical_node(clairvoyant_graph.nodes):
+                matching_edges = Dda.perform_matching(clairvoyant_graph)
 
                 # Given the results of DDA (if and what nodes to match), actually perform the matching
                 for edge in matching_edges:
                     # Draw rewards and update distributions for each matching performed
                     matching_result, matching_weight = environment.get_reward(edge.node1.node_class.id, edge.node2.node_class.id, phase_id)
                     
-                    reward = edge.weight#matching_result * matching_weight
+                    reward = edge.weight # matching_result * matching_weight
                     round_clairvoyant_reward += reward
 
                     # Remove matched nodes from the graph

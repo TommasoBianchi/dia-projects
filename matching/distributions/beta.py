@@ -16,6 +16,6 @@ class Beta(Probability_Distribution):
     def sample(self):
         return np.random.beta(self.alpha, self.beta)
 
-    def update_parameters(self, parameters):
-        self.alpha = parameters[0]
-        self.beta = parameters[1]
+    def update_parameters(self, parameters_delta):
+        self.alpha += parameters_delta[0]
+        self.beta += parameters_delta[1]

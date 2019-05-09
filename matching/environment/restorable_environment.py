@@ -64,3 +64,13 @@ class RestorableEnvironment(Environment):
 		self.saved_new_nodes = {}
 		self.restored_rewards = self.saved_rewards
 		self.saved_rewards = {}
+
+	def copy(self):
+		env = RestorableEnvironment(self.classes)
+
+		self.restored_new_nodes = deepcopy(self.restored_new_nodes)
+		self.saved_new_nodes = deepcopy(self.saved_new_nodes)
+		self.restored_rewards = deepcopy(self.restored_rewards)
+		self.saved_rewards = deepcopy(self.saved_rewards)
+
+		return env

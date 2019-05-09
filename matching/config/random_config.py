@@ -4,7 +4,7 @@ num_phases = 4
 
 def random_phase_data():
 	return	{
-				'duration': int(24 / num_phases),
+				'duration': int(12 / num_phases),
 				'left_classes': [
 					{
 						'new_node_rate_mean': randint(1, 3), 

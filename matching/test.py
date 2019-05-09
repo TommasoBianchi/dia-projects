@@ -60,7 +60,7 @@ import math
 # Configurations
 ###############################################
 
-num_days = 500    # Number of days the experiment is run
+num_days = 5    # Number of days the experiment is run
 
 ###############################################
 # Build environment (from config file)
@@ -105,12 +105,17 @@ class LearnerType(Enum):
     UCB1 = 1
     Clairvoyant = 2
 
-def perform_experiment(environment, num_days, phase_lengths, learner_type):
+def perform_experiment(environment, num_days, phase_lengths, learner_type, context_structure = None):
     print("\n--------- Starting experiment with " + learner_type.name + " ---------")
 
     ###############################################
     # Setup the experiment
     ###############################################
+
+    # Setup the context
+    day_length = sum(phase_lengths)
+    if context_structure == None:
+        context_structure = [ day_length ]
 
     # Instatiate DDA class with the selected matching algorithm
     Dda = DDA(Hungarian_algorithm())
@@ -119,26 +124,32 @@ def perform_experiment(environment, num_days, phase_lengths, learner_type):
     graph = Graph()
 
     # Build the Class_Algos from the ids of the Class_Envs
-    left_classes_ids = [c.id for c in environment.classes[0] if c.is_left]
-    right_classes_ids = [c.id for c in environment.classes[0] if not c.is_left]
+    contextualized_algo_classes = {} # Dictionary to map rounds to corresponding algo_class (when using context)
+    for (context_id, context) in enumerate(context_structure):
+        left_classes_ids = [c.id for c in environment.classes[0] if c.is_left]
+        right_classes_ids = [c.id for c in environment.classes[0] if not c.is_left]
 
-    algo_classes = [Class_Algo(id, True) for id in left_classes_ids] + [Class_Algo(id, False) for id in right_classes_ids]
+        algo_classes = [Class_Algo(id, True) for id in left_classes_ids] + [Class_Algo(id, False) for id in right_classes_ids]
 
-    for i in left_classes_ids:
-        for j in right_classes_ids:
-            distribution = Beta() if learner_type == LearnerType.ThompsonSampling else UCB1()
-            class_edge = Class_Algo_Edge(distribution)
-            l_class = [c for c in algo_classes if c.id == i][0]
-            r_class = [c for c in algo_classes if c.id == j][0]
-            l_class.set_edge_data(r_class, class_edge)
-            r_class.set_edge_data(l_class, class_edge)
+        for i in left_classes_ids:
+            for j in right_classes_ids:
+                distribution = Beta() if learner_type == LearnerType.ThompsonSampling else UCB1()
+                class_edge = Class_Algo_Edge(distribution)
+                l_class = [c for c in algo_classes if c.id == i][0]
+                r_class = [c for c in algo_classes if c.id == j][0]
+                l_class.set_edge_data(r_class, class_edge)
+                r_class.set_edge_data(l_class, class_edge)
+
+        for i in range(context):
+            round_id = i + sum(context_structure[:context_id])
+            contextualized_algo_classes[round_id] = algo_classes
 
     ###############################################
     # Utility functions (NOTE: some are implemented as clojures)
     ###############################################
 
-    def get_algo_class(class_id):
-        return [c for c in algo_classes if c.id == class_id][0]
+    def get_algo_class(class_id, round_id):
+        return [c for c in contextualized_algo_classes[round_id] if c.id == class_id][0]
 
     def get_env_class(class_id, phase_id):
         return [c for c in env_classes[phase_id] if c.id == class_id][0]
@@ -167,7 +178,7 @@ def perform_experiment(environment, num_days, phase_lengths, learner_type):
 
             phase_rewards = []
 
-            for round in range(phase_length):   # For every round in the phase
+            for round_id in range(phase_length):   # For every round in the phase
                 # print("-- Round " + str(round + 1) + " --")
 
                 iteration_number += 1
@@ -178,7 +189,7 @@ def perform_experiment(environment, num_days, phase_lengths, learner_type):
 
                 # Add those new nodes to the graph (mapping the id returned by the environment into the correct Class_Algo)
                 for (class_id, time_to_stay) in new_nodes:
-                    node_class = get_algo_class(class_id)
+                    node_class = get_algo_class(class_id, round_id)
                     graph.add_node(node_class, time_to_stay)
 
                 # Update the estimates of the weights of the graph
@@ -213,7 +224,7 @@ def perform_experiment(environment, num_days, phase_lengths, learner_type):
                             reward = edge.weight
                         round_reward += reward
 
-                        node1_class = get_algo_class(edge.node1.node_class.id)
+                        node1_class = get_algo_class(edge.node1.node_class.id, round_id)
                         edge_data = node1_class.edge_data[edge.node2.node_class.id]
 
                         if learner_type == LearnerType.ThompsonSampling:

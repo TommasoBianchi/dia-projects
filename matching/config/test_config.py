@@ -1,7 +1,7 @@
 configuration = { 
 					'phase_data': [
 						{
-							'duration': 10,
+							'duration': 24,
 							'left_classes': [
 								{
 									'new_node_rate_mean': 1, 

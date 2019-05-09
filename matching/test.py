@@ -34,11 +34,13 @@ except (SystemError, ImportError):
 
     import matplotlib.pyplot as plt
 
+import time
+
 ###############################################
 # Configurations
 ###############################################
 
-num_days = 30    # Number of days the experiment is run
+num_days = 8    # Number of days the experiment is run
 
 ###############################################
 # Build environment (from config file)
@@ -76,15 +78,25 @@ environment = RestorableEnvironment(env_classes)
 # Run experiments
 ###############################################
 
-experiment = Experiment(environment, phase_lengths, min_phase_length = 4)
+experiment = Experiment(environment, phase_lengths, min_phase_length = 3)
 
+start_time = time.time()
 clairvoyant_rewards = experiment.perform(num_days, LearnerType.Clairvoyant, debug_info = True)
+print("Clairvoyant executed in " + str(time.time() - start_time) + " seconds")
+start_time = time.time()
 ts_rewards = experiment.perform(num_days, LearnerType.ThompsonSampling, debug_info = True)
+print("TS executed in " + str(time.time() - start_time) + " seconds")
+start_time = time.time()
 ucb1_rewards = experiment.perform(num_days, LearnerType.UCB1, debug_info = True)
+print("UCB1 executed in " + str(time.time() - start_time) + " seconds")
+start_time = time.time()
 ts_ctx_rewards = experiment.perform(num_days, LearnerType.ThompsonSampling,
                                     context_generation_every_day = 5, debug_info = True)
+print("TS-context executed in " + str(time.time() - start_time) + " seconds")
+start_time = time.time()
 ucb1_ctx_rewards = experiment.perform(num_days, LearnerType.UCB1,
                                       context_generation_every_day = 5, debug_info = True)
+print("UCB1-context executed in " + str(time.time() - start_time) + " seconds")
 
 ###############################################
 # Plotting

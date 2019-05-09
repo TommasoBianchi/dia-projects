@@ -244,30 +244,58 @@ class Experiment():
                     left_classes_ids = [c.id for c in env_copy.classes[0] if c.is_left]
                     right_classes_ids = [c.id for c in env_copy.classes[0] if not c.is_left]
                     context_generation_exp.edge_lower_bounds = {}
-                    for round_id in range(day_length):
+                    for (context_id, context) in enumerate(context_structure):
                         for left_id in left_classes_ids:
                             for right_id in right_classes_ids:
-                                context = (round_id, min(left_id, right_id), max(left_id, right_id))
+                                rewards = []
 
-                                if context in rewards_by_context:
-                                    rewards = rewards_by_context[context]
+                                for i in range(context):
+                                    round_id = i + sum(context_structure[:context_id])
+                                    context_key = (round_id, min(left_id, right_id), max(left_id, right_id))
+
+                                    if context_key in rewards_by_context:
+                                        rewards += rewards_by_context[context_key]
+
+                                if len(rewards) > 0:
+                                    # Hoeffding lower bound
                                     bernoulli_rewards = list(map(lambda el: el[0], rewards))
                                     weight_rewards = list(map(lambda el: el[1], rewards))
-                                    bernoulli_mean = sum(bernoulli_rewards) / len(bernoulli_rewards)
-                                    weight_mean = sum(weight_rewards) / len(weight_rewards)
+                                    bernoulli_mean = np.mean(bernoulli_rewards)
+                                    weight_mean = np.mean(weight_rewards)
                                     hoeffding_bound = np.sqrt(-np.log(0.05) / (2 * len(bernoulli_rewards)))
-                                    context_generation_exp.edge_lower_bounds[context] = weight_mean * (bernoulli_mean - hoeffding_bound)
+                                    # Gaussian lower bound
+                                    full_rewards = list(map(lambda el: el[0] * el[1], rewards))
+                                    mean_reward = np.mean(full_rewards)
+                                    reward_std = np.std(full_rewards)
+                                    n = len(full_rewards)
+                                    z = 1.96 # for a 95% confidence interval
+                                    gaussian_bound = mean_reward - (z * (reward_std / np.sqrt(n)))
+                                    # Gaussian lower bound on weight
+                                    gaussian_weight_bound = weight_mean - (z * (np.std(weight_rewards) / np.sqrt(n)))
+
+                                    #total_lower_bound = gaussian_bound
+                                    total_lower_bound = weight_mean * (bernoulli_mean - hoeffding_bound)
+                                    #total_lower_bound = gaussian_weight_bound * (bernoulli_mean - hoeffding_bound)
+                                    #total_lower_bound = max(0, total_lower_bound)
                                 else:
-                                    context_generation_exp.edge_lower_bounds[context] = -1e12 # minus infinity
+                                    total_lower_bound = -1e12 # minus infinity
+
+                                for i in range(context):
+                                    round_id = i + sum(context_structure[:context_id])
+                                    context_key = (round_id, min(left_id, right_id), max(left_id, right_id))
+                                    context_generation_exp.edge_lower_bounds[context_key] = total_lower_bound
 
                     rewards = context_generation_exp.perform(day + 1, LearnerType.ContextEvaluation, context_structure)
+
+                    if debug_info:
+                        print("-- Context structure " + str(context_structure) + " has an expected reward of " + str(sum(rewards)))
 
                     return sum(rewards)
 
                 best_context_structure = max(all_context_structures, key = evaluate_context_structure)
 
                 if debug_info:
-                    print("Best context structure is " + str(context_structure))
+                    print("Best context structure is " + str(best_context_structure))
 
                 contextualized_algo_classes = build_contextualized_algo_classes(best_context_structure)
 

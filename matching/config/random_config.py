@@ -1,10 +1,10 @@
 from random import randint, random
 
-num_phases = 4
+num_phases = 3
 
-def random_phase_data():
+def random_phase_data(phase_id):
 	return	{
-				'duration': int(12 / num_phases),
+				'duration': 3,
 				'left_classes': [
 					{
 						'new_node_rate_mean': randint(1, 3), 
@@ -48,11 +48,11 @@ def random_phase_data():
 				'edge_data': {
 					(0, 0): {
 						'mean': random(),
-						'weight': randint(1, 10)
+						'weight': randint(1, 10) + 2 * phase_id
 					},
 					(0, 1): {
 						'mean': random(),
-						'weight': randint(1, 10)
+						'weight': max(0, randint(1, 10) - 2 * phase_id)
 					},
 					(0, 2): {
 						'mean': random(),
@@ -64,15 +64,15 @@ def random_phase_data():
 					},
 					(1, 1): {
 						'mean': random(),
-						'weight': randint(1, 10)
+						'weight': randint(1, 10) + 2 * phase_id
 					},
 					(1, 2): {
 						'mean': random(),
-						'weight': randint(1, 10)
+						'weight': max(0, randint(1, 10) - 2 * phase_id)
 					},
 					(2, 0): {
 						'mean': random(),
-						'weight': randint(1, 10)
+						'weight': max(0, randint(1, 10) - 2 * phase_id)
 					},
 					(2, 1): {
 						'mean': random(),
@@ -80,10 +80,10 @@ def random_phase_data():
 					},
 					(2, 2): {
 						'mean': random(),
-						'weight': randint(1, 10)
+						'weight': randint(1, 10) + 2 * phase_id
 					}
 				}
 			}
 
 def get_configuration():
-	return { 'phase_data': [ random_phase_data() for _ in range(num_phases) ] }
+	return { 'phase_data': [ random_phase_data(i) for i in range(num_phases) ] }

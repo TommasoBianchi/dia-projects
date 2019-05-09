@@ -5,7 +5,4 @@ class Node:
         self.coin_tossed = False
 
     def is_critical(self):
-        if self.time_to_stay == 1:
-            return True
-        else:
-            return False
+        return self.time_to_stay <= 1

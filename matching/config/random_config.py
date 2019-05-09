@@ -7,40 +7,40 @@ def random_phase_data(phase_id):
 				'duration': 3,
 				'left_classes': [
 					{
-						'new_node_rate_mean': randint(1, 3), 
-						'new_node_rate_variance': 2,
+						'new_node_rate_mean': randint(0, 1), 
+						'new_node_rate_variance': 1,
 						'time_to_stay_min': 2,
 						'time_to_stay_max': 5
 					},
 					{
-						'new_node_rate_mean': randint(1, 3), 
-						'new_node_rate_variance': 2,
+						'new_node_rate_mean': randint(0, 1), 
+						'new_node_rate_variance': 1,
 						'time_to_stay_min': 2,
 						'time_to_stay_max': 5
 					},
 					{
-						'new_node_rate_mean': randint(1, 3), 
-						'new_node_rate_variance': 2,
+						'new_node_rate_mean': randint(0, 1), 
+						'new_node_rate_variance': 1,
 						'time_to_stay_min': 2,
 						'time_to_stay_max': 5
 					}
 				],
 				'right_classes': [
 					{
-						'new_node_rate_mean': randint(1, 3), 
-						'new_node_rate_variance': 2,
+						'new_node_rate_mean': randint(0, 1), 
+						'new_node_rate_variance': 1,
 						'time_to_stay_min': 2,
 						'time_to_stay_max': 5
 					},
 					{
-						'new_node_rate_mean': randint(1, 3), 
-						'new_node_rate_variance': 2,
+						'new_node_rate_mean': randint(0, 1), 
+						'new_node_rate_variance': 1,
 						'time_to_stay_min': 2,
 						'time_to_stay_max': 5
 					},
 					{
-						'new_node_rate_mean': randint(1, 3), 
-						'new_node_rate_variance': 2,
+						'new_node_rate_mean': randint(0, 1), 
+						'new_node_rate_variance': 1,
 						'time_to_stay_min': 2,
 						'time_to_stay_max': 5
 					}

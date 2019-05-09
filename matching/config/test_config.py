@@ -4,7 +4,7 @@ configuration = {
 							'duration': 24,
 							'left_classes': [
 								{
-									'new_node_rate_mean': 1, 
+									'new_node_rate_mean': 0, 
 									'new_node_rate_variance': 1,
 									'time_to_stay_min': 2,
 									'time_to_stay_max': 5
@@ -16,7 +16,7 @@ configuration = {
 									'time_to_stay_max': 5
 								},
 								{
-									'new_node_rate_mean': 1, 
+									'new_node_rate_mean': 0, 
 									'new_node_rate_variance': 1,
 									'time_to_stay_min': 2,
 									'time_to_stay_max': 5
@@ -24,7 +24,7 @@ configuration = {
 							],
 							'right_classes': [
 								{
-									'new_node_rate_mean': 1, 
+									'new_node_rate_mean': 0, 
 									'new_node_rate_variance': 1,
 									'time_to_stay_min': 2,
 									'time_to_stay_max': 5
@@ -36,7 +36,7 @@ configuration = {
 									'time_to_stay_max': 5
 								},
 								{
-									'new_node_rate_mean': 1, 
+									'new_node_rate_mean': 0, 
 									'new_node_rate_variance': 1,
 									'time_to_stay_min': 2,
 									'time_to_stay_max': 5

@@ -12,7 +12,7 @@ class Knapsack:
 
     def knapsack_optimization(self, results, ind_value_row, ind_value_col, ind_res_row, ind_res_col, ind_res_col_curr):
         # Base case: all the subcampaings have been evaluated
-        if ind_res_row == self.subcampaigns and ind_res_col == 1:
+        if ind_res_row == self.subcampaigns and ind_res_col_curr == 0 and ind_res_col == 1:
             return results
 
         # Happens when the optimization step of the current subcampaing have been terminated
@@ -27,8 +27,7 @@ class Knapsack:
         # Perform the optimization for a given budget
         composed_value = self.values[ind_value_row - 1][ind_value_col - 1] + results[ind_res_row - 1][ind_res_col_curr - 1]
 
-        if composed_value > results[ind_res_row][ind_res_col - 1]:
-            results[ind_res_row][ind_res_col - 1] = composed_value
+        results[ind_res_row][ind_res_col - 1] = max(composed_value, results[ind_res_row][ind_res_col - 1])
 
         return self.knapsack_optimization(results, ind_value_row, ind_value_col + 1, ind_res_row,
                                    ind_res_col, ind_res_col_curr - 1)

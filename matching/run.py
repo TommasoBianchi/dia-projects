@@ -12,6 +12,7 @@ try:
 
     from matching.config.random_config import get_configuration as get_random_configuration
     from matching.config.test_config import get_configuration as get_test_configuration
+    from matching.config.test_multiphase_config import get_configuration as get_test_multiphase_configuration
 
     from matching.experiment.experiment import Experiment, LearnerType
 
@@ -29,18 +30,20 @@ except (SystemError, ImportError):
 
     from config.random_config import get_configuration as get_random_configuration
     from config.test_config import get_configuration as get_test_configuration
+    from config.test_multiphase_config import get_configuration as get_test_multiphase_configuration
 
     from experiment import Experiment, LearnerType
 
     import matplotlib.pyplot as plt
 
 import time
+import numpy as np
 
 ###############################################
 # Configurations
 ###############################################
 
-num_days = 500    # Number of days the experiment is run
+num_days = 15000    # Number of days the experiment is run
 
 ###############################################
 # Build environment (from config file)
@@ -49,7 +52,7 @@ num_days = 500    # Number of days the experiment is run
 env_classes = []
 phase_lengths = []
 
-configuration = get_random_configuration()
+configuration = get_test_multiphase_configuration()
 for phase_data in configuration['phase_data']:
     phase_lengths.append(phase_data['duration'])
     phase_env_classes = []
@@ -78,7 +81,7 @@ environment = RestorableEnvironment(env_classes)
 # Run experiments
 ###############################################
 
-experiment = Experiment(environment, phase_lengths, min_phase_length = 3)
+experiment = Experiment(environment, phase_lengths, min_phase_length = 4)
 
 start_time = time.time()
 clairvoyant_rewards = experiment.perform(num_days, LearnerType.Clairvoyant, debug_info = False)
@@ -90,30 +93,57 @@ start_time = time.time()
 ucb1_rewards = experiment.perform(num_days, LearnerType.UCB1, debug_info = False)
 print("UCB1 executed in " + str(time.time() - start_time) + " seconds")
 start_time = time.time()
-ts_ctx_rewards = experiment.perform(num_days, LearnerType.ThompsonSampling,
-                                    context_generation_every_day = 20, debug_info = False)
-print("TS-context executed in " + str(time.time() - start_time) + " seconds")
+ts_known_ctx_rewards = experiment.perform(num_days, LearnerType.ThompsonSampling, 
+                                          context_structure = phase_lengths, debug_info = False)
+print("TS-known-ctx executed in " + str(time.time() - start_time) + " seconds")
 start_time = time.time()
-ucb1_ctx_rewards = experiment.perform(num_days, LearnerType.UCB1,
-                                      context_generation_every_day = 20, debug_info = False)
-print("UCB1-context executed in " + str(time.time() - start_time) + " seconds")
+ucb1_known_ctx_rewards = experiment.perform(num_days, LearnerType.UCB1, 
+                                            context_structure = phase_lengths,  debug_info = False)
+print("UCB1-known-ctx executed in " + str(time.time() - start_time) + " seconds")
+# start_time = time.time()
+# ts_ctx_rewards = experiment.perform(num_days, LearnerType.ThompsonSampling,
+#                                     context_generation_every_day = 10, debug_info = False)
+# print("TS-context executed in " + str(time.time() - start_time) + " seconds")
+# start_time = time.time()
+# ucb1_ctx_rewards = experiment.perform(num_days, LearnerType.UCB1,
+#                                       context_generation_every_day = 10, debug_info = False)
+# print("UCB1-context executed in " + str(time.time() - start_time) + " seconds")
+
+ts_ctx_rewards = clairvoyant_rewards
+ucb1_ctx_rewards = clairvoyant_rewards
 
 ###############################################
 # Plotting
 ###############################################
 
-ts_cum_rewards = [sum(ts_rewards[:i]) for i in range(len(ts_rewards))]
-ucb1_cum_rewards = [sum(ucb1_rewards[:i]) for i in range(len(ucb1_rewards))]
-ts_ctx_cum_rewards = [sum(ts_ctx_rewards[:i]) for i in range(len(ts_ctx_rewards))]
-ucb1_ctx_cum_rewards = [sum(ucb1_ctx_rewards[:i]) for i in range(len(ucb1_ctx_rewards))]
-clairvoyant_cum_rewards = [sum(clairvoyant_rewards[:i]) for i in range(len(clairvoyant_rewards))]
+start_time = time.time()
+
+# ts_cum_rewards = [sum(ts_rewards[:i]) for i in range(len(ts_rewards))]
+# ucb1_cum_rewards = [sum(ucb1_rewards[:i]) for i in range(len(ucb1_rewards))]
+# ts_known_ctx_cum_rewards = [sum(ts_known_ctx_rewards[:i]) for i in range(len(ts_known_ctx_rewards))]
+# ucb1_known_ctx_cum_rewards = [sum(ucb1_known_ctx_rewards[:i]) for i in range(len(ucb1_known_ctx_rewards))]
+# ts_ctx_cum_rewards = [sum(ts_ctx_rewards[:i]) for i in range(len(ts_ctx_rewards))]
+# ucb1_ctx_cum_rewards = [sum(ucb1_ctx_rewards[:i]) for i in range(len(ucb1_ctx_rewards))]
+# clairvoyant_cum_rewards = [sum(clairvoyant_rewards[:i]) for i in range(len(clairvoyant_rewards))]
+
+ts_cum_rewards = np.cumsum(ts_rewards).tolist()
+ucb1_cum_rewards = np.cumsum(ucb1_rewards).tolist()
+ts_known_ctx_cum_rewards = np.cumsum(ts_known_ctx_rewards).tolist()
+ucb1_known_ctx_cum_rewards = np.cumsum(ucb1_known_ctx_rewards).tolist()
+ts_ctx_cum_rewards = np.cumsum(ts_ctx_rewards).tolist()
+ucb1_ctx_cum_rewards = np.cumsum(ucb1_ctx_rewards).tolist()
+clairvoyant_cum_rewards = np.cumsum(clairvoyant_rewards).tolist()
+
+print("Cumsums executed in " + str(time.time() - start_time) + " seconds")
 
 plt.plot(ts_cum_rewards)
 plt.plot(ucb1_cum_rewards)
+plt.plot(ts_known_ctx_cum_rewards)
+plt.plot(ucb1_known_ctx_cum_rewards)
 plt.plot(ts_ctx_cum_rewards)
 plt.plot(ucb1_ctx_cum_rewards)
 plt.plot(clairvoyant_cum_rewards)
-plt.legend(['Thompson sampling', 'UCB1', 'ThompsonSampling + context generation', 
+plt.legend(['Thompson sampling', 'UCB1', 'Thompson sampling + known context', 'UCB1 + known context', 'ThompsonSampling + context generation', 
             'UCB1 + context generation', 'Clairvoyant'], bbox_to_anchor = (0.05, 1), loc = 2)
 plt.title('Total cumulative rewards')
 plt.show()

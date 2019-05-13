@@ -183,25 +183,25 @@ class Experiment():
 
                         # Given the results of DDA (if and what nodes to match), actually perform the matching
                         for edge in matching_edges:
-                            # print("Matching " + str((edge.node1.node_class.id, edge.node2.node_class.id)))
-
-                            # Draw rewards and update distributions for each matching performed
-                            matching_result, matching_weight = self.environment.get_reward(edge.node1.node_class.id, edge.node2.node_class.id, phase_id)
-                            
-                            # print("Pulling arm " + str((edge.node1.node_class.id, edge.node2.node_class.id)) + " and getting reward " + str((matching_result, matching_weight)))
 
                             if learner_type in [ LearnerType.ThompsonSampling, LearnerType.UCB1 ]:
+                                
+                                # Draw rewards and update distributions for each matching performed
+                                matching_result, matching_weight = self.environment.get_reward(edge.node1.node_class.id, edge.node2.node_class.id, phase_id)
                                 reward = matching_result * matching_weight
+                                
+                                # Save contextualized reward
+                                reward_context = (round_id, min(edge.node1.node_class.id, edge.node2.node_class.id),
+                                                  max(edge.node1.node_class.id, edge.node2.node_class.id))
+                                if reward_context not in rewards_by_context:
+                                    rewards_by_context[reward_context] = []
+                                rewards_by_context[reward_context].append((matching_result, matching_weight))
+                            
                             elif learner_type in [ LearnerType.Clairvoyant, LearnerType.ContextEvaluation ]:
+                                # For clairvoyant algorithms there is no need to sample rewards from the environment
                                 reward = edge.weight
+                            
                             round_reward += reward
-
-                            # Save contextualized reward
-                            reward_context = (round_id, min(edge.node1.node_class.id, edge.node2.node_class.id),
-                                              max(edge.node1.node_class.id, edge.node2.node_class.id))
-                            if reward_context not in rewards_by_context:
-                                rewards_by_context[reward_context] = []
-                            rewards_by_context[reward_context].append((matching_result, matching_weight))
 
                             node1_class = get_algo_class(contextualized_algo_classes, edge.node1.node_class.id, round_id)
                             edge_data = node1_class.edge_data[edge.node2.node_class.id]
@@ -209,12 +209,13 @@ class Experiment():
                             if learner_type == LearnerType.ThompsonSampling:
                                 # TS update
                                 edge_data.distribution.update_parameters([matching_result, 1 - matching_result])
+                                # Update estimate of constant weight
+                                edge_data.update_estimated_weight(matching_weight)
                             elif learner_type == LearnerType.UCB1:
                                 # UCB1 update
                                 edge_data.distribution.update_parameters(matching_result)
-
-                            # Update estimate of constant weight
-                            edge_data.update_estimated_weight(matching_weight)
+                                # Update estimate of constant weight
+                                edge_data.update_estimated_weight(matching_weight)
 
                             # Remove matched nodes from the graph
                             graph.remove_node(edge.node1)
@@ -276,9 +277,9 @@ class Experiment():
                                     #total_lower_bound = gaussian_bound
                                     total_lower_bound = weight_mean * (bernoulli_mean - hoeffding_bound)
                                     #total_lower_bound = gaussian_weight_bound * (bernoulli_mean - hoeffding_bound)
-                                    #total_lower_bound = max(0, total_lower_bound)
+                                    total_lower_bound = max(0, total_lower_bound)
                                 else:
-                                    total_lower_bound = -1e12 # minus infinity
+                                    total_lower_bound = 0 # minus infinity
 
                                 for i in range(context):
                                     round_id = i + sum(context_structure[:context_id])
@@ -315,5 +316,17 @@ class Experiment():
                         edge_data.update_estimated_weight(matching_weight)
 
             # End of day
+
+        for round_id in range(day_length):
+            print("Estimates for round " + str(round_id) + " are:")
+            algo_classes = contextualized_algo_classes[round_id]
+            left_classes = [a for a in algo_classes if a.is_left]
+            right_classes = [a for a in algo_classes if not a.is_left]
+            for l in left_classes:
+                for r in right_classes:
+                    couple = (l.id, r.id)
+                    edge_data = l.edge_data[r.id]
+                    avg_sample = np.mean([edge_data.distribution.sample() for _ in range(100)])
+                    print(str(couple) + ": " + str(edge_data.estimated_weight * avg_sample))
 
         return all_rewards

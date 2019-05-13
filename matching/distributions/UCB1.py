@@ -17,7 +17,7 @@ class UCB1(Probability_Distribution):
         if self.realization_number < 1:
             return 1e100 # Practically equivalent to infinity, to ensure every arm is pulled at least once
 
-        return self.empirical_mean - np.sqrt((2*np.log(self.current_time)/(self.realization_number)))
+        return self.empirical_mean + np.sqrt((2 * np.log(self.current_time)) / self.realization_number)
 
     def update_parameters(self, new_realization):
         self.empirical_mean = (self.empirical_mean * self.realization_number + new_realization) \

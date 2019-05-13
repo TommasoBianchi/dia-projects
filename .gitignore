@@ -110,3 +110,6 @@ venv.bak/
 # Pycharm
 .idea
 >>>>>>> 8589ca3dd47d671bfb28d76d67d34dd821831455
+
+# Ignore matching plots
+matching/plots

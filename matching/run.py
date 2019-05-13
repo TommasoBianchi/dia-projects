@@ -43,7 +43,7 @@ import numpy as np
 # Configurations
 ###############################################
 
-num_days = 15000    # Number of days the experiment is run
+num_days = 200    # Number of days the experiment is run
 
 ###############################################
 # Build environment (from config file)
@@ -81,50 +81,40 @@ environment = RestorableEnvironment(env_classes)
 # Run experiments
 ###############################################
 
-experiment = Experiment(environment, phase_lengths, min_phase_length = 4)
+experiment = Experiment(environment, phase_lengths, min_phase_length = 4, seed = int(time.time()))
 
 start_time = time.time()
-clairvoyant_rewards = experiment.perform(num_days, LearnerType.Clairvoyant, debug_info = False)
+clairvoyant_rewards, clairvoyant_monitor = experiment.perform(num_days, LearnerType.Clairvoyant, debug_info = False)
 print("Clairvoyant executed in " + str(time.time() - start_time) + " seconds")
 start_time = time.time()
-ts_rewards = experiment.perform(num_days, LearnerType.ThompsonSampling, debug_info = False)
+ts_rewards, ts_monitor = experiment.perform(num_days, LearnerType.ThompsonSampling, debug_info = False)
 print("TS executed in " + str(time.time() - start_time) + " seconds")
 start_time = time.time()
-ucb1_rewards = experiment.perform(num_days, LearnerType.UCB1, debug_info = False)
+ucb1_rewards, ucb1_monitor = experiment.perform(num_days, LearnerType.UCB1, debug_info = False)
 print("UCB1 executed in " + str(time.time() - start_time) + " seconds")
 start_time = time.time()
-ts_known_ctx_rewards = experiment.perform(num_days, LearnerType.ThompsonSampling, 
+ts_known_ctx_rewards, _ = experiment.perform(num_days, LearnerType.ThompsonSampling, 
                                           context_structure = phase_lengths, debug_info = False)
 print("TS-known-ctx executed in " + str(time.time() - start_time) + " seconds")
 start_time = time.time()
-ucb1_known_ctx_rewards = experiment.perform(num_days, LearnerType.UCB1, 
+ucb1_known_ctx_rewards, _ = experiment.perform(num_days, LearnerType.UCB1, 
                                             context_structure = phase_lengths,  debug_info = False)
 print("UCB1-known-ctx executed in " + str(time.time() - start_time) + " seconds")
-# start_time = time.time()
-# ts_ctx_rewards = experiment.perform(num_days, LearnerType.ThompsonSampling,
-#                                     context_generation_every_day = 10, debug_info = False)
-# print("TS-context executed in " + str(time.time() - start_time) + " seconds")
-# start_time = time.time()
-# ucb1_ctx_rewards = experiment.perform(num_days, LearnerType.UCB1,
-#                                       context_generation_every_day = 10, debug_info = False)
-# print("UCB1-context executed in " + str(time.time() - start_time) + " seconds")
+start_time = time.time()
+ts_ctx_rewards, _ = experiment.perform(num_days, LearnerType.ThompsonSampling,
+                                    context_generation_every_day = 10, debug_info = False)
+print("TS-context executed in " + str(time.time() - start_time) + " seconds")
+start_time = time.time()
+ucb1_ctx_rewards, _ = experiment.perform(num_days, LearnerType.UCB1,
+                                      context_generation_every_day = 10, debug_info = False)
+print("UCB1-context executed in " + str(time.time() - start_time) + " seconds")
 
-ts_ctx_rewards = clairvoyant_rewards
-ucb1_ctx_rewards = clairvoyant_rewards
+# ts_ctx_rewards = clairvoyant_rewards
+# ucb1_ctx_rewards = clairvoyant_rewards
 
 ###############################################
 # Plotting
 ###############################################
-
-start_time = time.time()
-
-# ts_cum_rewards = [sum(ts_rewards[:i]) for i in range(len(ts_rewards))]
-# ucb1_cum_rewards = [sum(ucb1_rewards[:i]) for i in range(len(ucb1_rewards))]
-# ts_known_ctx_cum_rewards = [sum(ts_known_ctx_rewards[:i]) for i in range(len(ts_known_ctx_rewards))]
-# ucb1_known_ctx_cum_rewards = [sum(ucb1_known_ctx_rewards[:i]) for i in range(len(ucb1_known_ctx_rewards))]
-# ts_ctx_cum_rewards = [sum(ts_ctx_rewards[:i]) for i in range(len(ts_ctx_rewards))]
-# ucb1_ctx_cum_rewards = [sum(ucb1_ctx_rewards[:i]) for i in range(len(ucb1_ctx_rewards))]
-# clairvoyant_cum_rewards = [sum(clairvoyant_rewards[:i]) for i in range(len(clairvoyant_rewards))]
 
 ts_cum_rewards = np.cumsum(ts_rewards).tolist()
 ucb1_cum_rewards = np.cumsum(ucb1_rewards).tolist()
@@ -134,7 +124,7 @@ ts_ctx_cum_rewards = np.cumsum(ts_ctx_rewards).tolist()
 ucb1_ctx_cum_rewards = np.cumsum(ucb1_ctx_rewards).tolist()
 clairvoyant_cum_rewards = np.cumsum(clairvoyant_rewards).tolist()
 
-print("Cumsums executed in " + str(time.time() - start_time) + " seconds")
+plot_path = 'plots/'
 
 plt.plot(ts_cum_rewards)
 plt.plot(ucb1_cum_rewards)
@@ -144,24 +134,93 @@ plt.plot(ts_ctx_cum_rewards)
 plt.plot(ucb1_ctx_cum_rewards)
 plt.plot(clairvoyant_cum_rewards)
 plt.legend(['Thompson sampling', 'UCB1', 'Thompson sampling + known context', 'UCB1 + known context', 'ThompsonSampling + context generation', 
-            'UCB1 + context generation', 'Clairvoyant'], bbox_to_anchor = (0.05, 1), loc = 2)
+            'UCB1 + context generation', 'Clairvoyant'], bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title('Total cumulative rewards')
-plt.show()
+plt.savefig(plot_path + 'cumulative_rewards.png', bbox_inches='tight')
+plt.close()
 
 plt.plot([clairvoyant_cum_rewards[i] - ts_cum_rewards[i] for i in range(len(ts_cum_rewards))])
 plt.plot([clairvoyant_cum_rewards[i] - ucb1_cum_rewards[i] for i in range(len(ucb1_cum_rewards))])
 plt.plot([clairvoyant_cum_rewards[i] - ts_ctx_cum_rewards[i] for i in range(len(ts_ctx_cum_rewards))])
 plt.plot([clairvoyant_cum_rewards[i] - ucb1_ctx_cum_rewards[i] for i in range(len(ucb1_ctx_cum_rewards))])
 plt.legend(['Thompson sampling', 'UCB1', 'ThompsonSampling + context generation', 
-            'UCB1 + context generation'], bbox_to_anchor = (0.05, 1), loc = 2)
+            'UCB1 + context generation'], bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title('Total cumulative regret')
-plt.show()
+plt.savefig(plot_path + 'cumulative_regret.png', bbox_inches='tight')
+plt.close()
 
 plt.plot([(clairvoyant_cum_rewards[i] - ts_cum_rewards[i]) / (i+1) for i in range(len(ts_cum_rewards))])
 plt.plot([(clairvoyant_cum_rewards[i] - ucb1_cum_rewards[i]) / (i+1) for i in range(len(ucb1_cum_rewards))])
 plt.plot([(clairvoyant_cum_rewards[i] - ts_ctx_cum_rewards[i]) / (i+1) for i in range(len(ts_ctx_cum_rewards))])
 plt.plot([(clairvoyant_cum_rewards[i] - ucb1_ctx_cum_rewards[i]) / (i+1) for i in range(len(ucb1_ctx_cum_rewards))])
 plt.legend(['Thompson sampling', 'UCB1', 'ThompsonSampling + context generation', 
-            'UCB1 + context generation'], bbox_to_anchor = (0.05, 1), loc = 2)
+            'UCB1 + context generation'], bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title('Total average regret')
-plt.show()
+plt.savefig(plot_path + 'average_regret.png', bbox_inches='tight')
+plt.close()
+
+# Plot some monitoring data
+plt.plot(ts_monitor.get_matching_sizes()['per_day'])
+plt.plot(ucb1_monitor.get_matching_sizes()['per_day'])
+plt.legend(['Thompson sampling', 'UCB1'], bbox_to_anchor = (1.05, 1), loc = 2)
+plt.title("Matching sizes")
+plt.savefig(plot_path + 'matching_sizes.png', bbox_inches='tight')
+plt.close()
+
+plt.plot(ts_monitor.get_graph_sizes()['pre_matching']['per_day'])
+plt.plot(ts_monitor.get_graph_sizes()['post_matching']['per_day'])
+plt.plot(ucb1_monitor.get_graph_sizes()['pre_matching']['per_day'])
+plt.plot(ucb1_monitor.get_graph_sizes()['post_matching']['per_day'])
+plt.legend(['Thompson sampling - Pre-matching', 'Thompson sampling - Post-matching',
+            'UCB1 - Pre-matching', 'UCB1 - Post-matching'], bbox_to_anchor = (1.05, 1), loc = 2)
+plt.title("Graph sizes")
+plt.savefig(plot_path + 'graph_sizes.png', bbox_inches='tight')
+plt.close()
+
+legend = []
+ts_rewards_per_arm = ts_monitor.get_rewards_per_arm()['per_day']
+for (arm, rewards) in ts_rewards_per_arm.items():
+    plt.plot(np.cumsum(rewards))
+    legend.append('Thompson sampling - arm ' + str(arm))
+ucb1_rewards_per_arm = ucb1_monitor.get_rewards_per_arm()['per_day']
+for (arm, rewards) in ucb1_rewards_per_arm.items():
+    plt.plot(np.cumsum(rewards))
+    legend.append('UCB1 - arm ' + str(arm))
+# clairvoyant_rewards_per_arm = clairvoyant_monitor.get_number_of_arm_pulls()['per_day']
+# for (arm, rewards) in clairvoyant_rewards_per_arm.items():
+#     plt.plot(np.cumsum(rewards))
+#     legend.append('Clairvoyant - arm ' + str(arm))
+plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
+plt.title("Rewards per arm")
+plt.savefig(plot_path + 'rewards_per_arm.png', bbox_inches='tight')
+plt.close()
+
+legend = []
+ts_pulls_per_arm = ts_monitor.get_number_of_arm_pulls()['per_day']
+for (arm, n_pulls) in ts_pulls_per_arm.items():
+    plt.plot(np.cumsum(n_pulls))
+    legend.append('Thompson sampling - arm ' + str(arm))
+ucb1_pulls_per_arm = ucb1_monitor.get_number_of_arm_pulls()['per_day']
+for (arm, n_pulls) in ucb1_pulls_per_arm.items():
+    plt.plot(np.cumsum(n_pulls))
+    legend.append('UCB1 - arm ' + str(arm))
+# clairvoyant_pulls_per_arm = clairvoyant_monitor.get_number_of_arm_pulls()['per_day']
+# for (arm, n_pulls) in clairvoyant_pulls_per_arm.items():
+#     plt.plot(np.cumsum(n_pulls))
+#     legend.append('Clairvoyant - arm ' + str(arm))
+plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
+plt.title("Number of pulls per arm")
+plt.savefig(plot_path + 'pulls_per_arm.png', bbox_inches='tight')
+plt.close()
+
+legend = []
+for (arm, rewards) in ts_rewards_per_arm.items():
+    plt.plot(np.cumsum(rewards) / np.maximum(np.cumsum(ts_pulls_per_arm[arm]), 1))
+    legend.append('Thompson sampling - arm ' + str(arm))
+for (arm, rewards) in ucb1_rewards_per_arm.items():
+    plt.plot(np.cumsum(rewards) / np.maximum(np.cumsum(ucb1_pulls_per_arm[arm]), 1))
+    legend.append('UCB1 - arm ' + str(arm))
+plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
+plt.title("Average rewards per arm")
+plt.savefig(plot_path + 'average_rewards_per_arm.png', bbox_inches='tight')
+plt.close()

@@ -13,7 +13,7 @@ configuration = {
 									'time_to_stay_max': 5
 								},
 								{
-									'new_node_rate_mean': 1, 
+									'new_node_rate_mean': 0, 
 									'new_node_rate_variance': 1,
 									'time_to_stay_min': 2,
 									'time_to_stay_max': 5
@@ -27,7 +27,7 @@ configuration = {
 									'time_to_stay_max': 5
 								},
 								{
-									'new_node_rate_mean': 1, 
+									'new_node_rate_mean': 0, 
 									'new_node_rate_variance': 1,
 									'time_to_stay_min': 2,
 									'time_to_stay_max': 5
@@ -65,7 +65,7 @@ configuration = {
 									'time_to_stay_max': 5
 								},
 								{
-									'new_node_rate_mean': 1, 
+									'new_node_rate_mean': 0, 
 									'new_node_rate_variance': 1,
 									'time_to_stay_min': 2,
 									'time_to_stay_max': 5
@@ -79,7 +79,7 @@ configuration = {
 									'time_to_stay_max': 5
 								},
 								{
-									'new_node_rate_mean': 1, 
+									'new_node_rate_mean': 0, 
 									'new_node_rate_variance': 1,
 									'time_to_stay_min': 2,
 									'time_to_stay_max': 5
@@ -99,8 +99,8 @@ configuration = {
 									'weight': 5
 								},
 								(1, 1): {
-									'mean': 0.6,
-									'weight': 2
+									'mean': 0.2,
+									'weight': 3
 								}
 							}
 						},
@@ -117,7 +117,7 @@ configuration = {
 									'time_to_stay_max': 5
 								},
 								{
-									'new_node_rate_mean': 1, 
+									'new_node_rate_mean': 0, 
 									'new_node_rate_variance': 1,
 									'time_to_stay_min': 2,
 									'time_to_stay_max': 5
@@ -131,7 +131,7 @@ configuration = {
 									'time_to_stay_max': 5
 								},
 								{
-									'new_node_rate_mean': 1, 
+									'new_node_rate_mean': 0, 
 									'new_node_rate_variance': 1,
 									'time_to_stay_min': 2,
 									'time_to_stay_max': 5
@@ -151,8 +151,8 @@ configuration = {
 									'weight': 4
 								},
 								(1, 1): {
-									'mean': 0.5,
-									'weight': 4
+									'mean': 0.001,
+									'weight': 100
 								}
 							}
 						}

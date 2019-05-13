@@ -14,6 +14,8 @@ try:
 
     from matching.context_generation.context_generation import generate_context_structures
 
+    from matching.utilities.monitoring import ExperimentMonitor
+
     # from matching.utilities.drawing import draw_graph
     from random import randint, random
 except (SystemError, ImportError):
@@ -31,6 +33,8 @@ except (SystemError, ImportError):
     from algorithms.Hungarian_algorithm import Hungarian_algorithm
 
     from context_generation.context_generation import generate_context_structures
+
+    from utilities.monitoring import ExperimentMonitor
 
 from enum import Enum
 import numpy as np
@@ -57,7 +61,7 @@ class Experiment():
     # Perform loop function (built to be reusable as much as possible)
     ###############################################
     def perform(self, num_days, learner_type, context_structure = None, 
-                context_generation_every_day = -1, debug_info = False):
+                context_generation_every_day = -1, debug_info = False, monitoring_on = True):
         if debug_info:
             print("\n--------- Starting experiment with " + learner_type.name + " ---------")
 
@@ -79,6 +83,9 @@ class Experiment():
 
         # Instantiate the main Graph
         graph = Graph()
+
+        # Setup the monitoring for the experiment
+        monitor = ExperimentMonitor(num_days, day_length, monitoring_on)
 
         ###############################################
         # Utility functions (NOTE: some are implemented as clojures)
@@ -150,10 +157,16 @@ class Experiment():
                     # Sample new nodes from the environment
                     new_nodes = self.environment.get_new_nodes(phase_id)
 
+                    # Experiment monitoring
+                    monitor.new_nodes_added(day, round_id, new_nodes)
+
                     # Add those new nodes to the graph (mapping the id returned by the environment into the correct Class_Algo)
                     for (class_id, time_to_stay) in new_nodes:
                         node_class = get_algo_class(contextualized_algo_classes, class_id, round_id)
                         graph.add_node(node_class, time_to_stay)
+
+                    # Experiment monitoring
+                    monitor.graph_size_pre_matching(day, round_id, len(graph.nodes), len(graph.edges))
 
                     # Update the estimates of the weights of the graph
                     if learner_type == LearnerType.ThompsonSampling:
@@ -179,7 +192,10 @@ class Experiment():
 
                     # Whenever a node is going to exit the experiment run the DDA (Deferred Dynamic Acceptance) algorithm
                     if len(graph.edges) > 0 and Dda.is_there_critical_node(graph.nodes):
-                        matching_edges = Dda.perform_matching(graph)
+                        matching_edges, full_matching_edges = Dda.perform_matching(graph)
+
+                        # Experiment monitoring
+                        monitor.matching_performed(day, round_id, matching_edges, full_matching_edges)
 
                         # Given the results of DDA (if and what nodes to match), actually perform the matching
                         for edge in matching_edges:
@@ -189,6 +205,11 @@ class Experiment():
                                 # Draw rewards and update distributions for each matching performed
                                 matching_result, matching_weight = self.environment.get_reward(edge.node1.node_class.id, edge.node2.node_class.id, phase_id)
                                 reward = matching_result * matching_weight
+
+                                # Experiment monitoring
+                                monitor.reward_collected(day, round_id, phase_id,
+                                                         edge.node1.node_class.id, edge.node2.node_class.id, 
+                                                         matching_result, matching_weight)
                                 
                                 # Save contextualized reward
                                 reward_context = (round_id, min(edge.node1.node_class.id, edge.node2.node_class.id),
@@ -200,6 +221,11 @@ class Experiment():
                             elif learner_type in [ LearnerType.Clairvoyant, LearnerType.ContextEvaluation ]:
                                 # For clairvoyant algorithms there is no need to sample rewards from the environment
                                 reward = edge.weight
+
+                                # Experiment monitoring
+                                monitor.reward_collected(day, round_id, phase_id,
+                                                         edge.node1.node_class.id, edge.node2.node_class.id, 
+                                                         1, reward)
                             
                             round_reward += reward
 
@@ -223,6 +249,9 @@ class Experiment():
 
                     # Run the end_round routine of the graph, to update the time_to_stay for each node
                     graph.end_round_routine()
+
+                    # Experiment monitoring
+                    monitor.graph_size_post_matching(day, round_id, len(graph.nodes), len(graph.edges))
 
                     all_rewards.append(round_reward)
 
@@ -286,7 +315,7 @@ class Experiment():
                                     context_key = (round_id, min(left_id, right_id), max(left_id, right_id))
                                     context_generation_exp.edge_lower_bounds[context_key] = total_lower_bound
 
-                    rewards = context_generation_exp.perform(day + 1, LearnerType.ContextEvaluation, context_structure)
+                    rewards, _ = context_generation_exp.perform(day + 1, LearnerType.ContextEvaluation, context_structure, monitoring_on = False)
 
                     if debug_info:
                         print("-- Context structure " + str(context_structure) + " has an expected reward of " + str(sum(rewards)))
@@ -317,16 +346,16 @@ class Experiment():
 
             # End of day
 
-        for round_id in range(day_length):
-            print("Estimates for round " + str(round_id) + " are:")
-            algo_classes = contextualized_algo_classes[round_id]
-            left_classes = [a for a in algo_classes if a.is_left]
-            right_classes = [a for a in algo_classes if not a.is_left]
-            for l in left_classes:
-                for r in right_classes:
-                    couple = (l.id, r.id)
-                    edge_data = l.edge_data[r.id]
-                    avg_sample = np.mean([edge_data.distribution.sample() for _ in range(100)])
-                    print(str(couple) + ": " + str(edge_data.estimated_weight * avg_sample))
+        # for round_id in range(day_length):
+        #     print("Estimates for round " + str(round_id) + " are:")
+        #     algo_classes = contextualized_algo_classes[round_id]
+        #     left_classes = [a for a in algo_classes if a.is_left]
+        #     right_classes = [a for a in algo_classes if not a.is_left]
+        #     for l in left_classes:
+        #         for r in right_classes:
+        #             couple = (l.id, r.id)
+        #             edge_data = l.edge_data[r.id]
+        #             avg_sample = np.mean([edge_data.distribution.sample() for _ in range(100)])
+        #             print(str(couple) + ": " + str(edge_data.estimated_weight * avg_sample))
 
-        return all_rewards
+        return all_rewards, monitor

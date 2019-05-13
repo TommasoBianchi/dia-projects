@@ -1,7 +1,9 @@
 class Edge:
     def __init__(self, node1, node2):
-        self.node1 = node1
-        self.node2 = node2
+    	# Always have the node with the smallest class_id as the first one
+
+        self.node1 = min([node1, node2], key = lambda n: n.node_class.id)
+        self.node2 = max([node1, node2], key = lambda n: n.node_class.id)
 
     # Update the estimated weight of the edge.
     def update_weight(self):

@@ -327,6 +327,9 @@ class Experiment():
                 if debug_info:
                     print("Best context structure is " + str(best_context_structure))
 
+                # Experiment monitoring
+                monitor.context_generation_performed(day, best_context_structure)
+
                 contextualized_algo_classes = build_contextualized_algo_classes(best_context_structure)
 
                 # Re-feed old data to the newly built algo_classes

@@ -71,9 +71,9 @@ class ExperimentMonitor():
 		if not self.is_on:
 			return
 			
-		return
+		self.all_best_context_structures[day] = best_context_structure
 
-	def get_matching_sizes(self):			
+	def get_matching_sizes(self, type = 'matching_edges'):			
 		matching_size_per_timestep = []
 		matching_size_per_day = []
 
@@ -81,7 +81,7 @@ class ExperimentMonitor():
 			matches_this_day = 0
 			for round_id in range(self.day_length):
 				if (day, round_id) in self.all_matchings:
-					num_matchings = len(self.all_matchings[(day, round_id)])
+					num_matchings = len(self.all_matchings[(day, round_id)][type])
 					matching_size_per_timestep.append(num_matchings)
 					matches_this_day += num_matchings
 				else:
@@ -102,9 +102,9 @@ class ExperimentMonitor():
 			for round_id in range(self.day_length):
 				if (day, round_id) in self.graph_sizes:
 					size = self.graph_sizes[(day, round_id)]
-					graph_size_per_timestamp_pre.append(size['pre_matching'])
+					graph_size_per_timestamp_pre.append(size['pre_matching'][1])
 					size_pre_this_day += size['pre_matching'][1] # Size in number of edges
-					graph_size_per_timestamp_post.append(size['post_matching'])
+					graph_size_per_timestamp_post.append(size['post_matching'][1])
 					size_post_this_day += size['post_matching'][1]
 			graph_size_per_day_pre.append(size_pre_this_day / self.day_length)
 			graph_size_per_day_post.append(size_post_this_day / self.day_length)
@@ -119,13 +119,13 @@ class ExperimentMonitor():
 		rewards_per_arm_per_timestep = {c: [] for c in all_classes} # TODO: implement
 
 		for day in range(self.num_days):
+			reward_per_class = {c: 0 for c in all_classes}
 			if day in self.all_rewards_by_day:
-				reward_per_class = {c: 0 for c in all_classes}
 				for reward_data in self.all_rewards_by_day[day]:
 					class_pair = (reward_data['class1_id'], reward_data['class2_id'])
 					reward_per_class[class_pair] += reward_data['reward_realization'] * reward_data['reward_weight']
-				for (c, r) in reward_per_class.items():
-					rewards_per_arm_per_day[c].append(r)
+			for (c, r) in reward_per_class.items():
+				rewards_per_arm_per_day[c].append(r)
 
 		return {'per_timestamp': rewards_per_arm_per_timestep, 'per_day': rewards_per_arm_per_day}
 
@@ -136,12 +136,27 @@ class ExperimentMonitor():
 		pulls_per_arm_per_timestep = {c: [] for c in all_classes} # TODO: implement
 
 		for day in range(self.num_days):
+			pulls_per_class = {c: 0 for c in all_classes}
 			if day in self.all_rewards_by_day:
-				pulls_per_class = {c: 0 for c in all_classes}
 				for reward_data in self.all_rewards_by_day[day]:
 					class_pair = (reward_data['class1_id'], reward_data['class2_id'])
 					pulls_per_class[class_pair] += 1
-				for (c, r) in pulls_per_class.items():
-					pulls_per_arm_per_day[c].append(r)
+			for (c, r) in pulls_per_class.items():
+				pulls_per_arm_per_day[c].append(r)
 
 		return {'per_timestamp': pulls_per_arm_per_timestep, 'per_day': pulls_per_arm_per_day}				
+
+	def get_generated_context_structures(self):
+		generated_context_structures = []
+		current_context_structure = [self.day_length]
+		current_context_structure_starting_day = 0
+
+		for (day, context_structure) in sorted(self.all_best_context_structures.items(), key = lambda el: el[0]):
+			if context_structure != current_context_structure:
+				generated_context_structures.append(((current_context_structure_starting_day, day), current_context_structure))
+				current_context_structure = context_structure
+				current_context_structure_starting_day = day + 1
+
+		generated_context_structures.append(((current_context_structure_starting_day, self.num_days), current_context_structure))
+
+		return generated_context_structures

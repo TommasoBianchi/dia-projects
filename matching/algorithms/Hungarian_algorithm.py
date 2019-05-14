@@ -30,7 +30,7 @@ class Hungarian_algorithm:
 
     def __compute(self, initial_matrix):
         matrix = self.__copy(initial_matrix) #matrix = initial_matrix.copy()
-        matrix = self.__pad_matrix(matrix,0)
+        matrix = self.__pad_matrix(matrix, 100 * matrix.max())
         self.__step1(matrix)
         self.__step2(matrix)
         n_lines = 0

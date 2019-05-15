@@ -128,6 +128,17 @@ class Experiment():
                     for ed in c.edge_data.values():
                         ed.distribution.current_time = iteration_number
 
+        def is_beginning_of_context(round_id, context_structure):
+            if len(context_structure) <= 1:
+                return False
+
+            for context in context_structure:
+                if round_id == 0:
+                    return True
+                round_id -= context
+
+            return False
+
         ###############################################
         # Main experiment loop
         ###############################################
@@ -177,11 +188,11 @@ class Experiment():
                     # Update the estimates of the weights of the graph
                     if learner_type == LearnerType.ThompsonSampling:
                         # beta sample
-                        graph.update_weights()
+                        graph.update_weights(is_beginning_of_context(round_id, context_structure))
                     elif learner_type == LearnerType.UCB1:
                         # UCB1 bound
                         update_UCB1_current_time(contextualized_algo_classes, iteration_number)
-                        graph.update_weights()
+                        graph.update_weights(is_beginning_of_context(round_id, context_structure))
                     elif learner_type == LearnerType.Clairvoyant:
                         # Update the clairvoyant graph with the real weights
                         for edge in graph.edges:
@@ -329,6 +340,7 @@ class Experiment():
                     return sum(rewards)
 
                 best_context_structure = max(all_context_structures, key = evaluate_context_structure)
+                context_structure = best_context_structure
 
                 if debug_info:
                     print("Best context structure is " + str(best_context_structure))
@@ -354,17 +366,5 @@ class Experiment():
                         edge_data.update_estimated_weight(matching_weight)
 
             # End of day
-
-        # for round_id in range(day_length):
-        #     print("Estimates for round " + str(round_id) + " are:")
-        #     algo_classes = contextualized_algo_classes[round_id]
-        #     left_classes = [a for a in algo_classes if a.is_left]
-        #     right_classes = [a for a in algo_classes if not a.is_left]
-        #     for l in left_classes:
-        #         for r in right_classes:
-        #             couple = (l.id, r.id)
-        #             edge_data = l.edge_data[r.id]
-        #             avg_sample = np.mean([edge_data.distribution.sample() for _ in range(100)])
-        #             print(str(couple) + ": " + str(edge_data.estimated_weight * avg_sample))
 
         return all_rewards, monitor

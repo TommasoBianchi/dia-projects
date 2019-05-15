@@ -43,7 +43,7 @@ import numpy as np
 # Configurations
 ###############################################
 
-num_days = 2000    # Number of days the experiment is run
+num_days = 5000    # Number of days the experiment is run
 
 ###############################################
 # Build environment (from config file)
@@ -113,13 +113,13 @@ print("UCB1-known-ctx executed in " + str(time.time() - start_time) + " seconds"
 # Thompson sampling with context generation
 start_time = time.time()
 ts_ctx_rewards, ts_ctx_monitor = experiment.perform(num_days, LearnerType.ThompsonSampling,
-                                    context_generation_every_day = num_days / 5, debug_info = False)
+                                    context_generation_every_day = num_days / 5 + 1, debug_info = True)
 print("TS-context executed in " + str(time.time() - start_time) + " seconds")
 
 # UCB1 with context generation
 start_time = time.time()
 ucb1_ctx_rewards, ucb1_ctx_monitor = experiment.perform(num_days, LearnerType.UCB1,
-                                      context_generation_every_day = num_days / 5, debug_info = False)
+                                      context_generation_every_day = num_days / 5 + 1, debug_info = True)
 print("UCB1-context executed in " + str(time.time() - start_time) + " seconds")
 
 print(ts_ctx_monitor.get_generated_context_structures())
@@ -284,6 +284,11 @@ plt.title("Total number of pulls")
 plt.savefig(plot_path + 'total_arm_pulls.png', bbox_inches='tight', dpi = 300)
 plt.close()
 
+ts_ctx_rewards_per_arm = ts_ctx_monitor.get_rewards_per_arm()['per_day']
+ts_ctx_pulls_per_arm = ts_ctx_monitor.get_number_of_arm_pulls()['per_day']
+ucb1_ctx_rewards_per_arm = ucb1_ctx_monitor.get_rewards_per_arm()['per_day']
+ucb1_ctx_pulls_per_arm = ucb1_ctx_monitor.get_number_of_arm_pulls()['per_day']
+
 left_classes_ids = [c.id for c in environment.classes[0] if c.is_left]
 right_classes_ids = [c.id for c in environment.classes[0] if not c.is_left]
 for l_id in left_classes_ids:
@@ -294,6 +299,10 @@ for l_id in left_classes_ids:
         plt.plot(np.cumsum(ucb1_rewards_per_arm[arm]) / np.maximum(np.cumsum(ucb1_pulls_per_arm[arm]), 1))
         plt.plot(np.cumsum(ts_known_ctx_rewards_per_arm[arm]) / np.maximum(np.cumsum(ts_known_ctx_pulls_per_arm[arm]), 1))
         plt.plot(np.cumsum(ucb1_known_ctx_rewards_per_arm[arm]) / np.maximum(np.cumsum(ucb1_known_ctx_pulls_per_arm[arm]), 1))
-plt.legend(['Thompson sampling', 'UCB1', 'Thompson sampling (known context)', 'UCB1 (known context)'], bbox_to_anchor = (1.05, 1), loc = 2)
+        plt.plot(np.cumsum(ts_ctx_rewards_per_arm[arm]) / np.maximum(np.cumsum(ts_ctx_pulls_per_arm[arm]), 1))
+        plt.plot(np.cumsum(ucb1_ctx_rewards_per_arm[arm]) / np.maximum(np.cumsum(ucb1_ctx_pulls_per_arm[arm]), 1))
+plt.legend(['Thompson sampling', 'UCB1', 'Thompson sampling (known context)', 
+            'UCB1 (known context)', 'Thompson sampling + context generation', 'UCB1 + context generation'], 
+            bbox_to_anchor = (1.05, 1), loc = 2)
 plt.savefig(plot_path + 'average_rewards_per_arm.png', bbox_inches='tight', dpi = 300)
 plt.close()

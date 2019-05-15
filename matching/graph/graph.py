@@ -32,9 +32,9 @@ class Graph:
         return node
 
     # Update the estimated weights on all edges of the graph.
-    def update_weights(self):
+    def update_weights(self, force_update = False):
         for edge in self.edges:
-            edge.update_weight()
+            edge.update_weight(force_update)
 
     # Remove a given node (and all of its incident edges) from the graph.
     def remove_node(self, node):

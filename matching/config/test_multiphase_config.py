@@ -4,7 +4,7 @@ configuration = {
 						# PHASE 1
 						###########
 						{
-							'duration': 4,
+							'duration': 3,
 							'left_classes': [
 								{
 									'new_node_rate_mean': 0, 
@@ -36,7 +36,7 @@ configuration = {
 							'edge_data': {
 								(0, 0): {
 									'mean': 0.2,
-									'weight': 7
+									'weight': 60
 								},
 								(0, 1): {
 									'mean': 0.35,
@@ -48,7 +48,7 @@ configuration = {
 								},
 								(1, 1): {
 									'mean': 0.5,
-									'weight': 5
+									'weight': 50
 								}
 							}
 						},
@@ -56,7 +56,7 @@ configuration = {
 						# PHASE 2
 						###########
 						{
-							'duration': 4,
+							'duration': 3,
 							'left_classes': [
 								{
 									'new_node_rate_mean': 0, 
@@ -87,12 +87,12 @@ configuration = {
 							],
 							'edge_data': {
 								(0, 0): {
-									'mean': 0.35,
-									'weight': 7
+									'mean': 0.4,
+									'weight': 50
 								},
 								(0, 1): {
 									'mean': 0.3,
-									'weight': 8
+									'weight': 80
 								},
 								(1, 0): {
 									'mean': 0.4,
@@ -108,7 +108,7 @@ configuration = {
 						# PHASE 3
 						###########
 						{
-							'duration': 4,
+							'duration': 3,
 							'left_classes': [
 								{
 									'new_node_rate_mean': 0, 
@@ -139,8 +139,8 @@ configuration = {
 							],
 							'edge_data': {
 								(0, 0): {
-									'mean': 0.1,
-									'weight': 12
+									'mean': 0.2,
+									'weight': 80
 								},
 								(0, 1): {
 									'mean': 0.25,
@@ -148,7 +148,7 @@ configuration = {
 								},
 								(1, 0): {
 									'mean': 0.7,
-									'weight': 4
+									'weight': 40
 								},
 								(1, 1): {
 									'mean': 0.001,

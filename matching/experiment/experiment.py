@@ -168,6 +168,12 @@ class Experiment():
                     # Experiment monitoring
                     monitor.graph_size_pre_matching(day, round_id, len(graph.nodes), len(graph.edges))
 
+                    # Update the distribution used by each edge to match the current context structure
+                    if len(context_structure) > 1 and learner_type in [ LearnerType.ThompsonSampling, LearnerType.UCB1 ]:
+                        for node in graph.nodes:
+                            node_class = get_algo_class(contextualized_algo_classes, node.node_class.id, round_id)
+                            node.node_class = node_class
+
                     # Update the estimates of the weights of the graph
                     if learner_type == LearnerType.ThompsonSampling:
                         # beta sample

@@ -81,7 +81,7 @@ environment = RestorableEnvironment(env_classes)
 # Run experiments
 ###############################################
 
-experiment = Experiment(environment, phase_lengths, min_phase_length = 4, seed = int(time.time()))
+experiment = Experiment(environment, phase_lengths, min_phase_length = 3, seed = int(time.time()))
 
 # Clairvoyant (knows context structure and mean of all distributions)
 start_time = time.time()
@@ -100,14 +100,14 @@ print("UCB1 executed in " + str(time.time() - start_time) + " seconds")
 
 # Thompson sampling that perfectly knows the true context structure
 start_time = time.time()
-ts_known_ctx_rewards, _ = experiment.perform(num_days, LearnerType.ThompsonSampling, 
-                                          context_structure = phase_lengths, debug_info = False)
+ts_known_ctx_rewards, ts_known_ctx_monitor = experiment.perform(num_days, LearnerType.ThompsonSampling, 
+                                                                context_structure = phase_lengths, debug_info = False)
 print("TS-known-ctx executed in " + str(time.time() - start_time) + " seconds")
 
 # UCB1 that perfectly knows the true context structure
 start_time = time.time()
-ucb1_known_ctx_rewards, _ = experiment.perform(num_days, LearnerType.UCB1, 
-                                            context_structure = phase_lengths,  debug_info = False)
+ucb1_known_ctx_rewards, ucb1_known_ctx_monitor = experiment.perform(num_days, LearnerType.UCB1, 
+                                                                    context_structure = phase_lengths,  debug_info = False)
 print("UCB1-known-ctx executed in " + str(time.time() - start_time) + " seconds")
 
 # Thompson sampling with context generation
@@ -129,7 +129,7 @@ print(ucb1_ctx_monitor.get_generated_context_structures())
 # ucb1_ctx_rewards = clairvoyant_rewards
 
 ###############################################
-# Plotting
+# Plotting performances (i.e. rewards/regrets)
 ###############################################
 
 ts_cum_rewards = np.cumsum(ts_rewards).tolist()
@@ -152,8 +152,6 @@ plt.plot(clairvoyant_cum_rewards)
 plt.legend(['Thompson sampling', 'UCB1', 'Thompson sampling + known context', 'UCB1 + known context', 'ThompsonSampling + context generation', 
             'UCB1 + context generation', 'Clairvoyant'], bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title('Total cumulative rewards')
-# fig = plt.figure()
-# fig.set_size_inches(19.2,10.8)
 plt.savefig(plot_path + 'cumulative_rewards.png', bbox_inches='tight', dpi = 300)
 plt.close()
 
@@ -177,7 +175,9 @@ plt.title('Total average regret')
 plt.savefig(plot_path + 'average_regret.png', bbox_inches='tight', dpi = 300)
 plt.close()
 
-# Plot some monitoring data
+###############################################
+# Plotting monitoring data
+###############################################
 
 ts_matching_sizes = ts_monitor.get_matching_sizes()['per_day']
 plt.plot(ts_matching_sizes)
@@ -231,10 +231,16 @@ ucb1_rewards_per_arm = ucb1_monitor.get_rewards_per_arm()['per_day']
 for (arm, rewards) in ucb1_rewards_per_arm.items():
     plt.plot(np.cumsum(rewards), linestyle='dashed')
     legend.append('UCB1 - arm ' + str(arm))
-# clairvoyant_rewards_per_arm = clairvoyant_monitor.get_number_of_arm_pulls()['per_day']
-# for (arm, rewards) in clairvoyant_rewards_per_arm.items():
-#     plt.plot(np.cumsum(rewards))
-#     legend.append('Clairvoyant - arm ' + str(arm))
+plt.gca().set_prop_cycle(None)
+ts_known_ctx_rewards_per_arm = ts_known_ctx_monitor.get_rewards_per_arm()['per_day']
+for (arm, rewards) in ts_known_ctx_rewards_per_arm.items():
+    plt.plot(np.cumsum(rewards), linestyle='-.')
+    legend.append('Thompson sampling (known context) - arm ' + str(arm))
+plt.gca().set_prop_cycle(None)
+ucb1_known_ctx_rewards_per_arm = ucb1_known_ctx_monitor.get_rewards_per_arm()['per_day']
+for (arm, rewards) in ucb1_known_ctx_rewards_per_arm.items():
+    plt.plot(np.cumsum(rewards), linestyle=':')
+    legend.append('UCB1 (known context) - arm ' + str(arm))
 plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title("Rewards per arm")
 plt.savefig(plot_path + 'rewards_per_arm.png', bbox_inches='tight', dpi = 300)
@@ -250,10 +256,16 @@ ucb1_pulls_per_arm = ucb1_monitor.get_number_of_arm_pulls()['per_day']
 for (arm, n_pulls) in ucb1_pulls_per_arm.items():
     plt.plot(np.cumsum(n_pulls), linestyle='dashed')
     legend.append('UCB1 - arm ' + str(arm))
-# clairvoyant_pulls_per_arm = clairvoyant_monitor.get_number_of_arm_pulls()['per_day']
-# for (arm, n_pulls) in clairvoyant_pulls_per_arm.items():
-#     plt.plot(np.cumsum(n_pulls))
-#     legend.append('Clairvoyant - arm ' + str(arm))
+plt.gca().set_prop_cycle(None)
+ts_known_ctx_pulls_per_arm = ts_known_ctx_monitor.get_number_of_arm_pulls()['per_day']
+for (arm, n_pulls) in ts_known_ctx_pulls_per_arm.items():
+    plt.plot(np.cumsum(n_pulls), linestyle='-.')
+    legend.append('Thompson sampling (known context) - arm ' + str(arm))
+plt.gca().set_prop_cycle(None)
+ucb1_known_ctx_pulls_per_arm = ucb1_known_ctx_monitor.get_number_of_arm_pulls()['per_day']
+for (arm, n_pulls) in ucb1_known_ctx_pulls_per_arm.items():
+    plt.plot(np.cumsum(n_pulls), linestyle=':')
+    legend.append('UCB1 (known context) - arm ' + str(arm))
 plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title("Number of pulls per arm")
 plt.savefig(plot_path + 'pulls_per_arm.png', bbox_inches='tight', dpi = 300)
@@ -272,15 +284,16 @@ plt.title("Total number of pulls")
 plt.savefig(plot_path + 'total_arm_pulls.png', bbox_inches='tight', dpi = 300)
 plt.close()
 
-legend = []
-for (arm, rewards) in ts_rewards_per_arm.items():
-    plt.plot(np.cumsum(rewards) / np.maximum(np.cumsum(ts_pulls_per_arm[arm]), 1))
-    legend.append('Thompson sampling - arm ' + str(arm))
-plt.gca().set_prop_cycle(None)
-for (arm, rewards) in ucb1_rewards_per_arm.items():
-    plt.plot(np.cumsum(rewards) / np.maximum(np.cumsum(ucb1_pulls_per_arm[arm]), 1), linestyle='dashed')
-    legend.append('UCB1 - arm ' + str(arm))
-plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
-plt.title("Average rewards per arm")
+left_classes_ids = [c.id for c in environment.classes[0] if c.is_left]
+right_classes_ids = [c.id for c in environment.classes[0] if not c.is_left]
+for l_id in left_classes_ids:
+    for r_id in right_classes_ids:
+        arm = (l_id, r_id)
+        plt.subplot(len(left_classes_ids), len(right_classes_ids), 1 + l_id * len(right_classes_ids) + r_id - len(left_classes_ids), title = "Arm " + str(arm))
+        plt.plot(np.cumsum(ts_rewards_per_arm[arm]) / np.maximum(np.cumsum(ts_pulls_per_arm[arm]), 1))
+        plt.plot(np.cumsum(ucb1_rewards_per_arm[arm]) / np.maximum(np.cumsum(ucb1_pulls_per_arm[arm]), 1))
+        plt.plot(np.cumsum(ts_known_ctx_rewards_per_arm[arm]) / np.maximum(np.cumsum(ts_known_ctx_pulls_per_arm[arm]), 1))
+        plt.plot(np.cumsum(ucb1_known_ctx_rewards_per_arm[arm]) / np.maximum(np.cumsum(ucb1_known_ctx_pulls_per_arm[arm]), 1))
+plt.legend(['Thompson sampling', 'UCB1', 'Thompson sampling (known context)', 'UCB1 (known context)'], bbox_to_anchor = (1.05, 1), loc = 2)
 plt.savefig(plot_path + 'average_rewards_per_arm.png', bbox_inches='tight', dpi = 300)
 plt.close()

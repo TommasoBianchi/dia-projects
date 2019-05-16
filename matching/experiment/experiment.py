@@ -46,6 +46,11 @@ class LearnerType(Enum):
     Clairvoyant = 2
     ContextEvaluation = 3
 
+class LowerBoundType(Enum):
+    Hoeffding = 0
+    Gaussian = 1
+    Hybrid = 2
+
 class Experiment():
     def __init__(self, environment, phase_lengths, min_phase_length, seed = 0):
         self.environment = environment
@@ -60,7 +65,7 @@ class Experiment():
     ###############################################
     # Perform loop function (built to be reusable as much as possible)
     ###############################################
-    def perform(self, num_days, learner_type, context_structure = None, 
+    def perform(self, num_days, learner_type, context_structure = None, lower_bound_type = LowerBoundType.Hoeffding,
                 context_generation_every_day = -1, debug_info = False, monitoring_on = True):
         if debug_info:
             print("\n--------- Starting experiment with " + learner_type.name + " ---------")
@@ -320,9 +325,12 @@ class Experiment():
                                     # Gaussian lower bound on weight
                                     gaussian_weight_bound = weight_mean - (z * (np.std(weight_rewards) / np.sqrt(n)))
 
-                                    #total_lower_bound = gaussian_bound
-                                    total_lower_bound = weight_mean * (bernoulli_mean - hoeffding_bound)
-                                    #total_lower_bound = gaussian_weight_bound * (bernoulli_mean - hoeffding_bound)
+                                    if lower_bound_type == LowerBoundType.Hoeffding:
+                                        total_lower_bound = weight_mean * (bernoulli_mean - hoeffding_bound)
+                                    elif lower_bound_type == LowerBoundType.Gaussian:
+                                        total_lower_bound = gaussian_bound
+                                    elif lower_bound_type == LowerBoundType.Hybrid:
+                                        total_lower_bound = gaussian_weight_bound * (bernoulli_mean - hoeffding_bound)
                                     total_lower_bound = max(0, total_lower_bound)
                                 else:
                                     total_lower_bound = 0 # minus infinity
@@ -331,6 +339,16 @@ class Experiment():
                                     round_id = i + sum(context_structure[:context_id])
                                     context_key = (round_id, min(left_id, right_id), max(left_id, right_id))
                                     context_generation_exp.edge_lower_bounds[context_key] = total_lower_bound
+
+                    ### TEST
+                    # print("----- Testing context structure " + str(context_structure))
+                    # for (context_id, context) in enumerate(context_structure):
+                    #     context_strart_round = sum(context_structure[:context_id])
+                    #     print("-- Phase " + str(context_id))
+                    #     for left_id in left_classes_ids:
+                    #         for right_id in right_classes_ids:
+                    #             print(str((left_id, right_id)) + " = " + str(context_generation_exp.edge_lower_bounds[context_strart_round, left_id, right_id]))
+                    ### TEST
 
                     rewards, _ = context_generation_exp.perform(day + 1, LearnerType.ContextEvaluation, context_structure, monitoring_on = False)
 

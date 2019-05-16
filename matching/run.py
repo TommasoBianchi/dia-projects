@@ -14,7 +14,7 @@ try:
     from matching.config.test_config import get_configuration as get_test_configuration
     from matching.config.test_multiphase_config import get_configuration as get_test_multiphase_configuration
 
-    from matching.experiment.experiment import Experiment, LearnerType
+    from matching.experiment.experiment import Experiment, LearnerType, LowerBoundType
 
 except (SystemError, ImportError):
     # IMPORT FOR NON-PYCHARM USERS
@@ -32,7 +32,7 @@ except (SystemError, ImportError):
     from config.test_config import get_configuration as get_test_configuration
     from config.test_multiphase_config import get_configuration as get_test_multiphase_configuration
 
-    from experiment import Experiment, LearnerType
+    from experiment import Experiment, LearnerType, LowerBoundType
 
 import matplotlib.pyplot as plt
 
@@ -43,7 +43,7 @@ import numpy as np
 # Configurations
 ###############################################
 
-num_days = 5000    # Number of days the experiment is run
+num_days = 15000    # Number of days the experiment is run
 
 ###############################################
 # Build environment (from config file)
@@ -110,47 +110,86 @@ ucb1_known_ctx_rewards, ucb1_known_ctx_monitor = experiment.perform(num_days, Le
                                                                     context_structure = phase_lengths,  debug_info = False)
 print("UCB1-known-ctx executed in " + str(time.time() - start_time) + " seconds")
 
-# Thompson sampling with context generation
+# Thompson sampling with context generation (hoeffding lower bounds)
 start_time = time.time()
 ts_ctx_rewards, ts_ctx_monitor = experiment.perform(num_days, LearnerType.ThompsonSampling,
-                                    context_generation_every_day = num_days / 5 + 1, debug_info = True)
+                                    context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
 print("TS-context executed in " + str(time.time() - start_time) + " seconds")
 
-# UCB1 with context generation
+# UCB1 with context generation (hoeffding lower bounds)
 start_time = time.time()
 ucb1_ctx_rewards, ucb1_ctx_monitor = experiment.perform(num_days, LearnerType.UCB1,
-                                      context_generation_every_day = num_days / 5 + 1, debug_info = True)
+                                      context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
 print("UCB1-context executed in " + str(time.time() - start_time) + " seconds")
 
 print(ts_ctx_monitor.get_generated_context_structures())
 print(ucb1_ctx_monitor.get_generated_context_structures())
 
-# ts_ctx_rewards = clairvoyant_rewards
-# ucb1_ctx_rewards = clairvoyant_rewards
+# Thompson sampling with context generation (gaussian lower bounds)
+start_time = time.time()
+ts_ctx_gaussian_rewards, ts_ctx_gaussian_monitor = experiment.perform(num_days, LearnerType.ThompsonSampling, lower_bound_type = LowerBoundType.Gaussian,
+                                    context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
+print("TS-context-gaussian executed in " + str(time.time() - start_time) + " seconds")
+
+# UCB1 with context generation (gaussian lower bounds)
+start_time = time.time()
+ucb1_ctx_gaussian_rewards, ucb1_ctx_gaussian_monitor = experiment.perform(num_days, LearnerType.UCB1, lower_bound_type = LowerBoundType.Gaussian,
+                                      context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
+print("UCB1-context-gaussian executed in " + str(time.time() - start_time) + " seconds")
+
+print(ts_ctx_gaussian_monitor.get_generated_context_structures())
+print(ucb1_ctx_gaussian_monitor.get_generated_context_structures())
+
+# Thompson sampling with context generation (hybrid lower bounds)
+start_time = time.time()
+ts_ctx_hybrid_rewards, ts_ctx_hybrid_monitor = experiment.perform(num_days, LearnerType.ThompsonSampling, lower_bound_type = LowerBoundType.Hybrid,
+                                    context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
+print("TS-context-hybrid executed in " + str(time.time() - start_time) + " seconds")
+
+# UCB1 with context generation (hybrid lower bounds)
+start_time = time.time()
+ucb1_ctx_hybrid_rewards, ucb1_ctx_hybrid_monitor = experiment.perform(num_days, LearnerType.UCB1, lower_bound_type = LowerBoundType.Hybrid,
+                                      context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
+print("UCB1-context-hybrid executed in " + str(time.time() - start_time) + " seconds")
+
+print(ts_ctx_hybrid_monitor.get_generated_context_structures())
+print(ucb1_ctx_hybrid_monitor.get_generated_context_structures())
 
 ###############################################
 # Plotting performances (i.e. rewards/regrets)
 ###############################################
 
+clairvoyant_cum_rewards = np.cumsum(clairvoyant_rewards).tolist()
 ts_cum_rewards = np.cumsum(ts_rewards).tolist()
 ucb1_cum_rewards = np.cumsum(ucb1_rewards).tolist()
 ts_known_ctx_cum_rewards = np.cumsum(ts_known_ctx_rewards).tolist()
 ucb1_known_ctx_cum_rewards = np.cumsum(ucb1_known_ctx_rewards).tolist()
 ts_ctx_cum_rewards = np.cumsum(ts_ctx_rewards).tolist()
 ucb1_ctx_cum_rewards = np.cumsum(ucb1_ctx_rewards).tolist()
-clairvoyant_cum_rewards = np.cumsum(clairvoyant_rewards).tolist()
+ts_ctx_gaussian_cum_rewards = np.cumsum(ts_ctx_gaussian_rewards).tolist()
+ucb1_ctx_gaussian_cum_rewards = np.cumsum(ucb1_ctx_gaussian_rewards).tolist()
+ts_ctx_hybrid_cum_rewards = np.cumsum(ts_ctx_hybrid_rewards).tolist()
+ucb1_ctx_hybrid_cum_rewards = np.cumsum(ucb1_ctx_hybrid_rewards).tolist()
 
 plot_path = 'plots/'
 
+plt.plot(clairvoyant_cum_rewards)
 plt.plot(ts_cum_rewards)
 plt.plot(ucb1_cum_rewards)
 plt.plot(ts_known_ctx_cum_rewards)
 plt.plot(ucb1_known_ctx_cum_rewards)
-plt.plot(ts_ctx_cum_rewards)
-plt.plot(ucb1_ctx_cum_rewards)
-plt.plot(clairvoyant_cum_rewards)
-plt.legend(['Thompson sampling', 'UCB1', 'Thompson sampling + known context', 'UCB1 + known context', 'ThompsonSampling + context generation', 
-            'UCB1 + context generation', 'Clairvoyant'], bbox_to_anchor = (1.05, 1), loc = 2)
+plt.gca().set_prop_cycle(None)
+plt.plot(ts_ctx_cum_rewards, linestyle='--')
+plt.plot(ucb1_ctx_cum_rewards, linestyle='--')
+plt.plot(ts_ctx_gaussian_cum_rewards, linestyle='--')
+plt.plot(ucb1_ctx_gaussian_cum_rewards, linestyle='--')
+plt.plot(ts_ctx_hybrid_cum_rewards, linestyle='--')
+plt.plot(ucb1_ctx_hybrid_cum_rewards, linestyle='--')
+plt.legend(['Clairvoyant', 'Thompson sampling', 'UCB1', 'Thompson sampling + known context', 'UCB1 + known context', 
+            'ThompsonSampling + context generation', 'UCB1 + context generation',
+            'ThompsonSampling + context generation (gaussian bounds)', 'UCB1 + context generation (gaussian bounds)',
+            'ThompsonSampling + context generation (hybrid bounds)', 'UCB1 + context generation (hybrid bounds)'],
+            bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title('Total cumulative rewards')
 plt.savefig(plot_path + 'cumulative_rewards.png', bbox_inches='tight', dpi = 300)
 plt.close()

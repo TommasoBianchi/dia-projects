@@ -1,1 +1,1 @@
-from experiment.experiment import Experiment, LearnerType
+from experiment.experiment import Experiment, LearnerType, LowerBoundType

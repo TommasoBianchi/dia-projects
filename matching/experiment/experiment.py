@@ -14,6 +14,8 @@ try:
 
     from matching.context_generation.context_generation import generate_context_structures
 
+    from matching.utilities.monitoring import ExperimentMonitor
+
     # from matching.utilities.drawing import draw_graph
     from random import randint, random
 except (SystemError, ImportError):
@@ -32,6 +34,8 @@ except (SystemError, ImportError):
 
     from context_generation.context_generation import generate_context_structures
 
+    from utilities.monitoring import ExperimentMonitor
+
 from enum import Enum
 import numpy as np
 import random
@@ -41,6 +45,11 @@ class LearnerType(Enum):
     UCB1 = 1
     Clairvoyant = 2
     ContextEvaluation = 3
+
+class LowerBoundType(Enum):
+    Hoeffding = 0
+    Gaussian = 1
+    Hybrid = 2
 
 class Experiment():
     def __init__(self, environment, phase_lengths, min_phase_length, seed = 0):
@@ -56,8 +65,8 @@ class Experiment():
     ###############################################
     # Perform loop function (built to be reusable as much as possible)
     ###############################################
-    def perform(self, num_days, learner_type, context_structure = None, 
-                context_generation_every_day = -1, debug_info = False):
+    def perform(self, num_days, learner_type, context_structure = None, lower_bound_type = LowerBoundType.Hoeffding,
+                context_generation_every_day = -1, debug_info = False, monitoring_on = True):
         if debug_info:
             print("\n--------- Starting experiment with " + learner_type.name + " ---------")
 
@@ -79,6 +88,9 @@ class Experiment():
 
         # Instantiate the main Graph
         graph = Graph()
+
+        # Setup the monitoring for the experiment
+        monitor = ExperimentMonitor(num_days, day_length, monitoring_on)
 
         ###############################################
         # Utility functions (NOTE: some are implemented as clojures)
@@ -121,6 +133,17 @@ class Experiment():
                     for ed in c.edge_data.values():
                         ed.distribution.current_time = iteration_number
 
+        def is_beginning_of_context(round_id, context_structure):
+            if len(context_structure) <= 1:
+                return False
+
+            for context in context_structure:
+                if round_id == 0:
+                    return True
+                round_id -= context
+
+            return False
+
         ###############################################
         # Main experiment loop
         ###############################################
@@ -150,19 +173,31 @@ class Experiment():
                     # Sample new nodes from the environment
                     new_nodes = self.environment.get_new_nodes(phase_id)
 
+                    # Experiment monitoring
+                    monitor.new_nodes_added(day, round_id, new_nodes)
+
                     # Add those new nodes to the graph (mapping the id returned by the environment into the correct Class_Algo)
                     for (class_id, time_to_stay) in new_nodes:
                         node_class = get_algo_class(contextualized_algo_classes, class_id, round_id)
                         graph.add_node(node_class, time_to_stay)
 
+                    # Experiment monitoring
+                    monitor.graph_size_pre_matching(day, round_id, len(graph.nodes), len(graph.edges))
+
+                    # Update the distribution used by each edge to match the current context structure
+                    if len(context_structure) > 1 and learner_type in [ LearnerType.ThompsonSampling, LearnerType.UCB1 ]:
+                        for node in graph.nodes:
+                            node_class = get_algo_class(contextualized_algo_classes, node.node_class.id, round_id)
+                            node.node_class = node_class
+
                     # Update the estimates of the weights of the graph
                     if learner_type == LearnerType.ThompsonSampling:
                         # beta sample
-                        graph.update_weights()
+                        graph.update_weights(is_beginning_of_context(round_id, context_structure))
                     elif learner_type == LearnerType.UCB1:
                         # UCB1 bound
                         update_UCB1_current_time(contextualized_algo_classes, iteration_number)
-                        graph.update_weights()
+                        graph.update_weights(is_beginning_of_context(round_id, context_structure))
                     elif learner_type == LearnerType.Clairvoyant:
                         # Update the clairvoyant graph with the real weights
                         for edge in graph.edges:
@@ -179,29 +214,42 @@ class Experiment():
 
                     # Whenever a node is going to exit the experiment run the DDA (Deferred Dynamic Acceptance) algorithm
                     if len(graph.edges) > 0 and Dda.is_there_critical_node(graph.nodes):
-                        matching_edges = Dda.perform_matching(graph)
+                        matching_edges, full_matching_edges = Dda.perform_matching(graph)
+
+                        # Experiment monitoring
+                        monitor.matching_performed(day, round_id, matching_edges, full_matching_edges)
 
                         # Given the results of DDA (if and what nodes to match), actually perform the matching
                         for edge in matching_edges:
-                            # print("Matching " + str((edge.node1.node_class.id, edge.node2.node_class.id)))
-
-                            # Draw rewards and update distributions for each matching performed
-                            matching_result, matching_weight = self.environment.get_reward(edge.node1.node_class.id, edge.node2.node_class.id, phase_id)
-                            
-                            # print("Pulling arm " + str((edge.node1.node_class.id, edge.node2.node_class.id)) + " and getting reward " + str((matching_result, matching_weight)))
 
                             if learner_type in [ LearnerType.ThompsonSampling, LearnerType.UCB1 ]:
+                                
+                                # Draw rewards and update distributions for each matching performed
+                                matching_result, matching_weight = self.environment.get_reward(edge.node1.node_class.id, edge.node2.node_class.id, phase_id)
                                 reward = matching_result * matching_weight
-                            elif learner_type in [ LearnerType.Clairvoyant, LearnerType.ContextEvaluation ]:
-                                reward = edge.weight
-                            round_reward += reward
 
-                            # Save contextualized reward
-                            reward_context = (round_id, min(edge.node1.node_class.id, edge.node2.node_class.id),
-                                              max(edge.node1.node_class.id, edge.node2.node_class.id))
-                            if reward_context not in rewards_by_context:
-                                rewards_by_context[reward_context] = []
-                            rewards_by_context[reward_context].append((matching_result, matching_weight))
+                                # Experiment monitoring
+                                monitor.reward_collected(day, round_id, phase_id,
+                                                         edge.node1.node_class.id, edge.node2.node_class.id, 
+                                                         matching_result, matching_weight)
+                                
+                                # Save contextualized reward
+                                reward_context = (round_id, min(edge.node1.node_class.id, edge.node2.node_class.id),
+                                                  max(edge.node1.node_class.id, edge.node2.node_class.id))
+                                if reward_context not in rewards_by_context:
+                                    rewards_by_context[reward_context] = []
+                                rewards_by_context[reward_context].append((matching_result, matching_weight))
+                            
+                            elif learner_type in [ LearnerType.Clairvoyant, LearnerType.ContextEvaluation ]:
+                                # For clairvoyant algorithms there is no need to sample rewards from the environment
+                                reward = edge.weight
+
+                                # Experiment monitoring
+                                monitor.reward_collected(day, round_id, phase_id,
+                                                         edge.node1.node_class.id, edge.node2.node_class.id, 
+                                                         1, reward)
+                            
+                            round_reward += reward
 
                             node1_class = get_algo_class(contextualized_algo_classes, edge.node1.node_class.id, round_id)
                             edge_data = node1_class.edge_data[edge.node2.node_class.id]
@@ -209,12 +257,13 @@ class Experiment():
                             if learner_type == LearnerType.ThompsonSampling:
                                 # TS update
                                 edge_data.distribution.update_parameters([matching_result, 1 - matching_result])
+                                # Update estimate of constant weight
+                                edge_data.update_estimated_weight(matching_weight)
                             elif learner_type == LearnerType.UCB1:
                                 # UCB1 update
                                 edge_data.distribution.update_parameters(matching_result)
-
-                            # Update estimate of constant weight
-                            edge_data.update_estimated_weight(matching_weight)
+                                # Update estimate of constant weight
+                                edge_data.update_estimated_weight(matching_weight)
 
                             # Remove matched nodes from the graph
                             graph.remove_node(edge.node1)
@@ -222,6 +271,9 @@ class Experiment():
 
                     # Run the end_round routine of the graph, to update the time_to_stay for each node
                     graph.end_round_routine()
+
+                    # Experiment monitoring
+                    monitor.graph_size_post_matching(day, round_id, len(graph.nodes), len(graph.edges))
 
                     all_rewards.append(round_reward)
 
@@ -273,19 +325,32 @@ class Experiment():
                                     # Gaussian lower bound on weight
                                     gaussian_weight_bound = weight_mean - (z * (np.std(weight_rewards) / np.sqrt(n)))
 
-                                    #total_lower_bound = gaussian_bound
-                                    total_lower_bound = weight_mean * (bernoulli_mean - hoeffding_bound)
-                                    #total_lower_bound = gaussian_weight_bound * (bernoulli_mean - hoeffding_bound)
-                                    #total_lower_bound = max(0, total_lower_bound)
+                                    if lower_bound_type == LowerBoundType.Hoeffding:
+                                        total_lower_bound = weight_mean * (bernoulli_mean - hoeffding_bound)
+                                    elif lower_bound_type == LowerBoundType.Gaussian:
+                                        total_lower_bound = gaussian_bound
+                                    elif lower_bound_type == LowerBoundType.Hybrid:
+                                        total_lower_bound = gaussian_weight_bound * (bernoulli_mean - hoeffding_bound)
+                                    total_lower_bound = max(0, total_lower_bound)
                                 else:
-                                    total_lower_bound = -1e12 # minus infinity
+                                    total_lower_bound = 0 # minus infinity
 
                                 for i in range(context):
                                     round_id = i + sum(context_structure[:context_id])
                                     context_key = (round_id, min(left_id, right_id), max(left_id, right_id))
                                     context_generation_exp.edge_lower_bounds[context_key] = total_lower_bound
 
-                    rewards = context_generation_exp.perform(day + 1, LearnerType.ContextEvaluation, context_structure)
+                    ### TEST
+                    # print("----- Testing context structure " + str(context_structure))
+                    # for (context_id, context) in enumerate(context_structure):
+                    #     context_strart_round = sum(context_structure[:context_id])
+                    #     print("-- Phase " + str(context_id))
+                    #     for left_id in left_classes_ids:
+                    #         for right_id in right_classes_ids:
+                    #             print(str((left_id, right_id)) + " = " + str(context_generation_exp.edge_lower_bounds[context_strart_round, left_id, right_id]))
+                    ### TEST
+
+                    rewards, _ = context_generation_exp.perform(day + 1, LearnerType.ContextEvaluation, context_structure, monitoring_on = False)
 
                     if debug_info:
                         print("-- Context structure " + str(context_structure) + " has an expected reward of " + str(sum(rewards)))
@@ -293,9 +358,13 @@ class Experiment():
                     return sum(rewards)
 
                 best_context_structure = max(all_context_structures, key = evaluate_context_structure)
+                context_structure = best_context_structure
 
                 if debug_info:
                     print("Best context structure is " + str(best_context_structure))
+
+                # Experiment monitoring
+                monitor.context_generation_performed(day, best_context_structure)
 
                 contextualized_algo_classes = build_contextualized_algo_classes(best_context_structure)
 
@@ -316,4 +385,4 @@ class Experiment():
 
             # End of day
 
-        return all_rewards
+        return all_rewards, monitor

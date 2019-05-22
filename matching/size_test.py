@@ -14,15 +14,16 @@ from experiment.class_algo_edge import Class_Algo_Edge
 
 from config.random_config import get_configuration as get_random_configuration
 from config.test_config import get_configuration as get_test_configuration
+from config.test_multiphase_config import get_configuration as get_test_multiphase_configuration
 
 import matplotlib.pyplot as plt
 
-num_days = 50    # Number of days the experiment is run
+num_days = 100    # Number of days the experiment is run
 
 env_classes = []
 phase_lengths = []
 
-configuration = get_test_configuration()
+configuration = get_test_multiphase_configuration()
 for phase_data in configuration['phase_data']:
     phase_lengths.append(phase_data['duration'])
     phase_env_classes = []

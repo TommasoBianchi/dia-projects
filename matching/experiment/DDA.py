@@ -65,4 +65,4 @@ class DDA:
                 else:
                     self.toss_coin(final_matching_edges, edge)
 
-        return final_matching_edges
+        return final_matching_edges, matching_edges

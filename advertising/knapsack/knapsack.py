@@ -3,6 +3,12 @@ import math
 import numpy as np
 
 
+def make_values_feasibles(values):
+    for row in values:
+        row[0] = -math.inf
+    return values
+
+
 class Knapsack:
     def __init__(self, subcampaigns, budget, values):
         self.subcampaigns_number = subcampaigns
@@ -16,7 +22,7 @@ class Knapsack:
 
     def optimize(self):
         results = [[0] * len(self.budgets) for _ in range(self.subcampaigns_number)]
-        self.values = self.make_values_feasibles(self.values)
+        self.values = make_values_feasibles(self.values)
         temp_l = []
 
         # Perform knapsack optimization
@@ -24,11 +30,6 @@ class Knapsack:
 
         # Compute the assignment from the knapsack optimization results
         return self.compute_assignment(self.combinations[-1][-1], self.combinations.copy())
-
-    def make_values_feasibles(self, values):
-        for row in values:
-            row[0] = -math.inf
-        return values
 
     def knapsack_optimization(self, results, ind_value_row, ind_value_col, ind_res_row, ind_res_col, ind_res_col_curr,
                               best_budget_comb, temp_l):
@@ -77,3 +78,4 @@ class Knapsack:
         last_sub = combinations[-1][last_sub[1]]
 
         return self.compute_assignment(last_sub, combinations, assignment)
+

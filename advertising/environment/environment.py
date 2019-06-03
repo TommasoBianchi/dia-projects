@@ -1,10 +1,9 @@
-import subcampaign
 
 class Environment:
     def __init__(self, subcampaigns):
         self.subcampaigns = subcampaigns
 
-    def get_subcampain(self,id):
+    def get_subcampaign(self,id):
         if id < len(self.subcampaigns):
             return self.subcampaigns[id]
         return False

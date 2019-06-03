@@ -28,8 +28,8 @@ class GP_TS:
         self.collected_rewards = np.append(self.collected_rewards, reward)
 
     def sample(self, arm_idx):
-        x = {self.arms[arm_idx]}
-        return self.gaussian_process.sample_y(x)
+        x = self.arms[arm_idx]
+        return self.gaussian_process.predict(np.atleast_2d(x).T)[0]
 
     def find_arm(self, arm):
         for idx in range(self.n_arms):

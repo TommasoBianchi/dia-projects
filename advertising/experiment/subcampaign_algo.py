@@ -1,4 +1,4 @@
-from advertising.gaussian_processes import GP_TS
+from gaussian_processes import GP_TS
 
 class Subcampaign_algo:
     def __init__(self, num_arms, arms):

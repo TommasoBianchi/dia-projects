@@ -1,6 +1,5 @@
-import click_function
 
-class Subcampaing:
+class Subcampaign:
 
     def __init__(self, classes):
         self.classes = classes
@@ -15,7 +14,7 @@ class Subcampaing:
         combinations = self.__produce_classes_combination()
         subcampaings = []
         for combination in combinations:
-            subcampaing = Subcampaing(combination)
+            subcampaing = Subcampaign(combination)
             subcampaings.append(subcampaing)
         return subcampaings
 

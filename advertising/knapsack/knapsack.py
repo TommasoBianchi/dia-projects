@@ -2,9 +2,9 @@ import math
 import numpy as np
 
 class Knapsack:
-    def __init__(self, subcampaigns, budget, values):
-        self.subcampaigns_number = subcampaigns + 1
-        self.subcampaigns_list = list(range(subcampaigns))
+    def __init__(self, budget, values):
+        self.subcampaigns_number = len(values) + 1
+        self.subcampaigns_list = list(range(len(values)))
         self.budgets = list(range(0, budget + 10, 10))
         self.budget_value = budget
         self.combinations = [[(ind, 0) for ind in range(len(self.budgets))]]

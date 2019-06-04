@@ -2,7 +2,7 @@ import math
 
 class Knapsack:
     def __init__(self, subcampaigns, budget, values):
-        self.subcampaigns_number = subcampaigns
+        self.subcampaigns_number = subcampaigns + 1
         self.subcampaigns_list = list(range(subcampaigns))
         self.budgets = list(range(0, budget + 10, 10))
         self.budget_value = budget

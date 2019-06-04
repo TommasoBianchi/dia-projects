@@ -1,9 +1,9 @@
-from advertising.environment.click_function import Click_Function
-from advertising.distributions.gaussian import Gaussian
-from advertising.environment.subcampaign import Subcampaign
-from advertising.environment.environment import Environment
-from advertising.knapsack.knapsack import Knapsack
-from advertising.experiment.subcampaign_algo import Subcampaign_algo
+from environment.click_function import Click_Function
+from distributions.gaussian import Gaussian
+from environment.subcampaign import Subcampaign
+from environment.environment import Environment
+from knapsack.knapsack import Knapsack
+from experiment.subcampaign_algo import Subcampaign_algo
 import matplotlib.pyplot as plt
 import numpy as np
 

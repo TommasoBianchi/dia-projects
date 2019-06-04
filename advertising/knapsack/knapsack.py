@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 class Knapsack:
     def __init__(self, subcampaigns, budget, values):
@@ -12,6 +13,10 @@ class Knapsack:
         self.values = values
 
     def optimize(self):
+        all_zero = self.all_zero_result()
+        if all_zero[0]:
+            return all_zero[1]
+
         results = [[0] * len(self.budgets) for _ in range(self.subcampaigns_number)]
         # self.values = self.make_values_feasibles(self.values)
         temp_l = []
@@ -74,3 +79,33 @@ class Knapsack:
         last_sub = combinations[-1][last_sub[1]]
 
         return self.compute_assignment(last_sub, combinations, assignment)
+
+    def all_zero_result(self):
+        final_sum = 0
+        for subcamp in self.values:
+            final_sum += sum(x > 0 for x in subcamp)
+
+        if final_sum > 0:
+            return (False, self.values)
+
+        else:
+            budget = self.budget_value
+            res = []
+            num = self.subcampaigns_number - 2
+            while budget > 0 and num >= 0:
+                budgets = list(range(0, budget + 10, 10))
+                budget_ass = np.random.choice(budgets, replace=True)
+                res.append((num, budget_ass))
+                num -= 1
+                budget -= budget_ass
+
+            if len(res) <= self.subcampaigns_number - 2:
+                while num >= 0:
+                    res.append((num, 0))
+                    num -= 1
+
+            # I assign to the last campaign all the budget remaining for consistency reasons
+            elif budget != 0:
+                res[-1] = (res[-1][0], res[-1][1] + budget)
+
+            return (True, res)

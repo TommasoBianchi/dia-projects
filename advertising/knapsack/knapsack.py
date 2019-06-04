@@ -5,7 +5,9 @@ class Knapsack:
     def __init__(self, budget, values):
         self.subcampaigns_number = len(values) + 1
         self.subcampaigns_list = list(range(len(values)))
-        self.budgets = list(range(0, budget + 10, 10))
+        step = budget / (len(values[0])-1)
+
+        self.budgets = [ i*step for i in range(len(values[0])) ] #list(range(0, budget + step_1, step_1))
         self.budget_value = budget
         self.combinations = [[(ind, 0) for ind in range(len(self.budgets))]]
 
@@ -92,8 +94,11 @@ class Knapsack:
             budget = self.budget_value
             res = []
             num = self.subcampaigns_number - 2
+            #step = budget / (len(self.values[0]) - 1)
+            #budgets = [i * step for i in range(len(self.values[0]))]  # list(range(0, budget + step_1, step_1))
             while budget > 0 and num >= 0:
-                budgets = list(range(0, budget + 10, 10))
+                step = budget / (len(self.values[0]) - 1)
+                budgets = [i * step for i in range(len(self.values[0]))]
                 budget_ass = np.random.choice(budgets, replace=True)
                 res.append((num, budget_ass))
                 num -= 1

@@ -111,5 +111,10 @@ venv.bak/
 .idea
 >>>>>>> 8589ca3dd47d671bfb28d76d67d34dd821831455
 
-# Ignore matching plots
-matching/plots
+# Ignore matching plots (but keep the folder itself)
+matching/plots/*
+!matching/plots/.keep
+
+# Ignore advertising plots (but keep the folder itself)
+advertising/plots/*
+!advertising/plots/.keep

@@ -7,13 +7,13 @@ class Subcampaign:
     def sample(self, x):
         val = 0
         for c in self.classes:
-            val = val + c.sample(x)
+            val = val + c.sample(x / len(self.classes))
         return val
 
     def get_real(self, x):
         val = 0
         for c in self.classes:
-            val = val + c.real_function_value(x)
+            val = val + c.real_function_value(x / len(self.classes))
         return val
 
     def disaggregate(self):

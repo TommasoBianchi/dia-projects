@@ -14,7 +14,7 @@ import numpy as np
 ## Configurations
 ############################################
 
-timesteps = 100
+timesteps = 250
 daily_budget = 100
 budget_discretization_density = 10
 budget_discretization_steps = [i * daily_budget / budget_discretization_density for i in range(budget_discretization_density + 1)]
@@ -53,6 +53,7 @@ subcampaign_algos = [Subcampaign_algo(budget_discretization_steps.copy()) for _ 
 ## Build the clairvoyant solution
 ############################################
 
+# With aggregated subcampaigns
 real_values = []
 for subcampaign in environment.subcampaigns:
     real_values.append([subcampaign.get_real(arm) for arm in budget_discretization_steps])
@@ -61,12 +62,27 @@ print("Optimal superarm is " + str(optimal_super_arm))
 optimal_super_arm_value = sum([environment.subcampaigns[i].get_real(arm) for (i, arm) in optimal_super_arm])
 print("Value of optimal superarm = " + str(optimal_super_arm_value))
 
+# With fully disaggregated subcampaigns
+real_values = []
+subclasses_dict = dict()
+subclass_index = 0
+for subcampaign in environment.subcampaigns:
+    for subclass in subcampaign.classes:
+        real_values.append([subclass.real_function_value(arm) for arm in budget_discretization_steps])
+        subclasses_dict[subclass_index] = subclass
+        subclass_index += 1
+optimal_disaggregated_super_arm = Knapsack(daily_budget, real_values).optimize()
+print("Optimal disaggregated superarm is " + str(optimal_disaggregated_super_arm))
+optimal_disaggregated_super_arm_value = sum([subclasses_dict[i].real_function_value(arm) for (i, arm) in optimal_disaggregated_super_arm])
+print("Value of optimal disaggregated superarm = " + str(optimal_disaggregated_super_arm_value))
+
 ############################################
 ## Main loop
 ############################################
 
 rewards = []
-clairvoyant_rewards = []
+clairvoyant_rewards = [optimal_super_arm_value for _ in range(timesteps)]
+disaggregated_clairvoyant_rewards = [optimal_disaggregated_super_arm_value for _ in range(timesteps)]
 
 for t in range(timesteps):
 
@@ -81,7 +97,7 @@ for t in range(timesteps):
 
     # Run knapsack optimization
     super_arm = Knapsack(daily_budget, estimations).optimize()
-    
+
     # Fix for first day
     if t == 0:
         super_arm = [(i, daily_budget / num_subcampaigns) for i in range(num_subcampaigns)]
@@ -92,20 +108,12 @@ for t in range(timesteps):
         reward = environment.get_subcampaign(subcampaign_id).sample(budget_assigned)
         total_reward += reward
         subcampaign_algos[subcampaign_id].update(budget_assigned, reward)
-
-    # Collect clairvoyant rewards
-    total_clairvoyant_reward = 0
-    for (subcampaign_id, budget_assigned) in optimal_super_arm:
-        reward = environment.get_subcampaign(subcampaign_id).sample(budget_assigned)
-        total_clairvoyant_reward += reward
     
     print("-------------------------")
-    #print(estimations)
     print("t = " + str(t+1) + ", superarm = " + str(super_arm) + ", reward = " + str(total_reward))
     print("-------------------------")
 
     rewards.append(total_reward)
-    clairvoyant_rewards.append(total_clairvoyant_reward)
 
 ############################################
 ## Plot results
@@ -113,7 +121,8 @@ for t in range(timesteps):
 
 plt.plot(np.cumsum(rewards))
 plt.plot(np.cumsum(clairvoyant_rewards))
-plt.legend(['GPTS', 'Clairvoyant'], bbox_to_anchor = (1.05, 1), loc = 2)
+plt.plot(np.cumsum(disaggregated_clairvoyant_rewards))
+plt.legend(['GPTS', 'Clairvoyant', 'Disaggregated clairvoyant'], bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title("Cumulative reward")
 plt.savefig(plot_path + 'cumulative_reward.png', bbox_inches='tight', dpi = 300)
 plt.close()

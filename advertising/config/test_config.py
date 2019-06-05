@@ -4,21 +4,21 @@ configuration = [
 		'noise_mean': 0,
 		'noise_variance': 2,
 		'max_value': 15,
-		'offset': 25,
+		'offset': 8,
 		'speed': 0.2
 	},
 	{
 		'noise_mean': 0,
 		'noise_variance': 2,
 		'max_value': 20,
-		'offset': 50,
+		'offset': 16,
 		'speed': 0.1
 	},
 	{
 		'noise_mean': 0,
 		'noise_variance': 2,
 		'max_value': 12,
-		'offset': 10,
+		'offset': 3,
 		'speed': 0.3
 	}],
 	# Subcampaign 2
@@ -26,14 +26,14 @@ configuration = [
 		'noise_mean': 0,
 		'noise_variance': 2,
 		'max_value': 15,
-		'offset': 25,
+		'offset': 5,
 		'speed': 0.2
 	},
 	{
 		'noise_mean': 0,
 		'noise_variance': 2,
 		'max_value': 40,
-		'offset': 70,
+		'offset': 23,
 		'speed': 0.1
 	},
 	{
@@ -48,21 +48,21 @@ configuration = [
 		'noise_mean': 0,
 		'noise_variance': 2,
 		'max_value': 20,
-		'offset': 25,
+		'offset': 8,
 		'speed': 0.5
 	},
 	{
 		'noise_mean': 0,
 		'noise_variance': 2,
 		'max_value': 20,
-		'offset': 60,
+		'offset': 20,
 		'speed': 0.02
 	},
 	{
 		'noise_mean': 0,
 		'noise_variance': 2,
 		'max_value': 10,
-		'offset': 15,
+		'offset': 5,
 		'speed': 0.2
 	}]
 ]

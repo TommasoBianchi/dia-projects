@@ -10,6 +10,12 @@ class Subcampaign:
             val = val + c.sample(x)
         return val
 
+    def get_real(self, x):
+        val = 0
+        for c in self.classes:
+            val = val + c.real_function_value(x)
+        return val
+
     def disaggregate(self):
         combinations = self.__produce_classes_combination()
         subcampaings = []
@@ -26,9 +32,3 @@ class Subcampaign:
                 if(c < len(self.classes) ):
                     result.append([self.classes[i],self.classes[c]])
         return result
-
-
-#sub = Subcampaing([1,2,3,4])
-#disag = sub.disaggregate()
-#for s in disag:
-#    print(s.classes)

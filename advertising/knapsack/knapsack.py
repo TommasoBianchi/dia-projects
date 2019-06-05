@@ -9,7 +9,7 @@ class Knapsack:
 
         self.budgets = [ i*step for i in range(len(values[0])) ] #list(range(0, budget + step_1, step_1))
         self.budget_value = budget
-        self.combinations = [[(ind, 0) for ind in range(len(self.budgets))]]
+        self.combinations = []
 
         # It is a matrix: values[subcamp_id][budget_id] = value
         self.values = values
@@ -26,6 +26,8 @@ class Knapsack:
         # Perform knapsack optimization
         self.knapsack_optimization(results, 1, 1, 1, len(self.budgets), len(self.budgets), (0, 0), temp_l)
 
+        #res, self.combinations = self.knapsack_optimization_2()
+
         # Compute the assignment from the knapsack optimization results
         return self.compute_assignment(self.combinations[-1][-1], self.combinations.copy())
 
@@ -34,10 +36,34 @@ class Knapsack:
             row[0] = -math.inf
         return values
 
+    def knapsack_optimization_2(self):
+        numerical_results = [[0] * len(self.budgets)]
+        indices = []
+
+        for current_row in self.values:
+            results_row = []
+            indices_row = []
+            for i in range(len(current_row)):
+                best_value = 0
+                best_indices = (i, 0)
+                for old_index in range(0, i+1):
+                    index = i - old_index
+                    if(current_row[index] + numerical_results[-1][old_index] > best_value):
+                        best_value = current_row[index] + numerical_results[-1][old_index]
+                        best_indices = (index, old_index)
+                results_row.append(best_value)
+                indices_row.append(best_indices)
+            numerical_results.append(results_row)
+            indices.append(indices_row)
+
+        return (numerical_results, indices)
+
     def knapsack_optimization(self, results, ind_value_row, ind_value_col, ind_res_row, ind_res_col, ind_res_col_curr,
                               best_budget_comb, temp_l):
         # Base case: all the subcampaings have been evaluated
         if ind_res_row == self.subcampaigns_number - 1 and ind_res_col_curr == 0 and ind_res_col == 1:
+            temp_l.append((0, 0))
+            self.combinations.append(list(reversed(temp_l)))
             return results
 
         # Happens when the optimization step of the current subcampaing have been terminated
@@ -51,14 +77,14 @@ class Knapsack:
         elif ind_res_col_curr == 0:
             temp_l.append(best_budget_comb)
             return self.knapsack_optimization(results, ind_value_row, 1, ind_res_row, ind_res_col - 1, ind_res_col - 1,
-                                              (0, 0), temp_l)
+                                              (ind_res_col - 2, 0), temp_l)
 
         # Perform the optimization for a given budget
         composed_value = self.values[ind_value_row - 1][ind_value_col - 1] + results[ind_res_row - 1][
             ind_res_col_curr - 1]
 
         if composed_value > results[ind_res_row][ind_res_col - 1]:
-            best_budget_comb = (ind_res_col_curr - 1, ind_value_col - 1)
+            best_budget_comb = (ind_value_col - 1, ind_res_col_curr - 1)
         results[ind_res_row][ind_res_col - 1] = max(composed_value, results[ind_res_row][ind_res_col - 1])
 
         return self.knapsack_optimization(results, ind_value_row, ind_value_col + 1, ind_res_row,

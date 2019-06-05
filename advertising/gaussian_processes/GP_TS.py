@@ -20,8 +20,10 @@ class GP_TS:
         x = np.atleast_2d(self.pulled_arms).T
         y = self.collected_rewards
         self.gaussian_process.fit(x, y)
-        self.predicted_arms, self.sigmas = self.gaussian_process.predict(np.atleast_2d(self.arms).T, return_std=True)
-        self.sigmas = np.maximum(self.sigmas, 1e-2) #sigmas must be positive
+        self.means, self.sigmas = self.gaussian_process.predict(np.atleast_2d(self.arms).T, return_std=True)
+        self.sigmas = np.maximum(self.sigmas, 1e-4) #sigmas must be positive
+        self.predicted_arms = np.random.normal(self.means, self.sigmas)
+        self.predicted_arms = np.maximum(0, self.predicted_arms) # predictions must be nonnegative (for the knapsack)
 
     # Add the new observation in the model
     def update_observations(self, arm_idx, reward):

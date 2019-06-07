@@ -1,18 +1,18 @@
 print("Job Matching Service")
 
 """
-    This is a Job Matching Service. The Environment considered is composed by 6 classes: three of them are constituted 
-    by group of candidates in the IT with distinct skills looking for their dream job, and the other half is composed by
-    companies with different goals and aiming to hire the perfect candidate. 
-    
-    The candidates classes are: Machine Learning Engineers, Software Engineers and Front End Developers. 
-    Instead, the companies categories taken into account are specialize respectively in: Video Game Development,
-    implementation of Mobile Applications and Recommender Systems design.
+    We are EasyJob, an innovative startup based in Milan proposing a breakthrough platform in the Job Searching service.
+    Our mission is to help young candidates specialized in IT with different skills to find their dream job, and the
+    companies to hire the best fitting candidate for their vacancies.
+    The Environment considered is composed by 6 classes. The candidates classes are: Machine Learning Engineers, 
+    Software Engineers and Front End Developers. Instead, the companies categories taken into account are specialize
+    respectively in: Video Game Development, implementation of Mobile Applications and Recommender Systems design.
     
     The two set of three classes represent the two sides of the matching problem that our project aim to solve.
     The interest of the different groups of candidates for a certain category of companies and, vice-versa, the 
     relevance that a category of companies gives to a candidate with a particular skill change across the four phases. 
  """
+
 configuration = {
 
     # LEFT:

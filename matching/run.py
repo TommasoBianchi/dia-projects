@@ -12,7 +12,7 @@ try:
 
     from matching.config.random_config import get_configuration as get_random_configuration
     from matching.config.test_config import get_configuration as get_test_configuration
-    from matching.config.test_multiphase_config import get_configuration as get_test_multiphase_configuration
+    from matching.config.multiphase_config import get_configuration as get_test_multiphase_configuration
 
     from matching.experiment.experiment import Experiment, LearnerType, LowerBoundType
 
@@ -43,7 +43,7 @@ import numpy as np
 # Configurations
 ###############################################
 
-num_days = 15000    # Number of days the experiment is run
+num_days = 500    # Number of days the experiment is run
 
 ###############################################
 # Build environment (from config file)

@@ -9,7 +9,15 @@ class Environment:
         return False
 
     def get_combinations(self):
-        result = []
-        for subcampaing in self.subcampaigns:
-            result.append(subcampaing.disaggregate())
+        result = [[]]
+        for subcampaign in self.subcampaigns:
+            splits = subcampaign.disaggregate()
+            new_result = []
+            for combination in result:
+                for split in splits:
+                    new_result.append([s.copy() for s in combination] + [s.copy() for s in split])
+            result = new_result
         return result
+
+    def copy(self):
+        return Environment([s.copy() for s in self.subcampaigns])

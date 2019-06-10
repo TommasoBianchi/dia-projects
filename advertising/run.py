@@ -1,4 +1,5 @@
 from experiment.subcampaign_algo import Subcampaign_algo
+from experiment.context_generation import disaggregate_context
 
 from knapsack.knapsack import Knapsack
 
@@ -15,27 +16,28 @@ import numpy as np
 ## Configurations
 ############################################
 
-timesteps = 150
+timesteps = 100
+context_generation_rate = 10
 daily_budget = 100
 budget_discretization_density = 10
 budget_discretization_steps = [i * daily_budget / budget_discretization_density for i in range(budget_discretization_density + 1)]
 plot_path = "plots/"
 
 ############################################
-## Build the environment
+## Build the original_environment
 ############################################
 
-environment = build_environment(get_test_configuration())
-num_subcampaigns = len(environment.subcampaigns)
+original_environment = build_environment(get_test_configuration())
+num_subcampaigns = len(original_environment.subcampaigns)
 
 ############################################
-## Plot environment data
+## Plot original_environment data
 ############################################
 
 legend = []
 for i in range(num_subcampaigns):
-    plot_function(environment.subcampaigns[i].get_real, range(daily_budget))
-    plot_function(environment.subcampaigns[i].sample, range(daily_budget))
+    plot_function(original_environment.subcampaigns[i].get_real, range(daily_budget))
+    plot_function(lambda x: sum(original_environment.subcampaigns[i].sample(x)), range(daily_budget))
     legend.append("Subcampaign " + str(i+1) + " real click function")
     legend.append("Subcampaign " + str(i+1) + " noisy click function")
 
@@ -56,18 +58,18 @@ subcampaign_algos = [Subcampaign_algo(budget_discretization_steps.copy()) for _ 
 
 # With aggregated subcampaigns
 real_values = []
-for subcampaign in environment.subcampaigns:
+for subcampaign in original_environment.subcampaigns:
     real_values.append([subcampaign.get_real(arm) for arm in budget_discretization_steps])
 optimal_super_arm = Knapsack(daily_budget, real_values).optimize()
 print("Optimal superarm is " + str(optimal_super_arm))
-optimal_super_arm_value = sum([environment.subcampaigns[i].get_real(arm) for (i, arm) in optimal_super_arm])
+optimal_super_arm_value = sum([original_environment.subcampaigns[i].get_real(arm) for (i, arm) in optimal_super_arm])
 print("Value of optimal superarm = " + str(optimal_super_arm_value))
 
 # With fully disaggregated subcampaigns
 real_values = []
 subclasses_dict = dict()
 subclass_index = 0
-for subcampaign in environment.subcampaigns:
+for subcampaign in original_environment.subcampaigns:
     for subclass in subcampaign.classes:
         real_values.append([subclass.real_function_value(arm) for arm in budget_discretization_steps])
         subclasses_dict[subclass_index] = subclass
@@ -85,8 +87,11 @@ rewards = []
 clairvoyant_rewards = [optimal_super_arm_value for _ in range(timesteps)]
 disaggregated_clairvoyant_rewards = [optimal_disaggregated_super_arm_value for _ in range(timesteps)]
 
-regression_errors_max = [[] for _ in range(num_subcampaigns)]
-regression_errors_sum = [[] for _ in range(num_subcampaigns)]
+# TODO: run only when without context generation
+# regression_errors_max = [[] for _ in range(num_subcampaigns)]
+# regression_errors_sum = [[] for _ in range(num_subcampaigns)]
+
+environment = original_environment.copy()
 
 for t in range(timesteps):
 
@@ -111,8 +116,8 @@ for t in range(timesteps):
     total_reward = 0
     for (subcampaign_id, budget_assigned) in super_arm:
         reward = environment.get_subcampaign(subcampaign_id).sample(budget_assigned)
-        total_reward += reward
-        subcampaign_algos[subcampaign_id].update(budget_assigned, reward)
+        total_reward += sum(reward)
+        subcampaign_algos[subcampaign_id].update(budget_assigned, sum(reward))
     
     print("-------------------------")
     print("t = " + str(t+1) + ", superarm = " + str(super_arm) + ", reward = " + str(total_reward))
@@ -120,9 +125,30 @@ for t in range(timesteps):
 
     rewards.append(total_reward)
 
-    for i in range(num_subcampaigns):
-        regression_errors_max[i].append(subcampaign_algos[i].get_regression_error())
-        regression_errors_sum[i].append(subcampaign_algos[i].get_regression_error(use_sum = True))
+    # TODO: run only when without context generation
+    # for i in range(num_subcampaigns):
+    #     regression_errors_max[i].append(subcampaign_algos[i].get_regression_error())
+    #     regression_errors_sum[i].append(subcampaign_algos[i].get_regression_error(use_sum = True))
+
+    # Context generation
+    if (t+1) % context_generation_rate == 0:
+        # Disaggreagate contexts
+        disaggregate_context(environment)
+
+        context_generation_rate = 9999999
+
+        # Update parameters
+        num_subcampaigns = len(environment.subcampaigns)
+        subcampaign_algos = [Subcampaign_algo(budget_discretization_steps.copy()) for _ in range(num_subcampaigns)]
+        
+        # Retrain gaussian processes
+        for subcampaign_id in range(num_subcampaigns):
+            subcampaign_algo = subcampaign_algos[subcampaign_id]
+            for click_function in environment.get_subcampaign(subcampaign_id).classes:
+                for (arm, sample) in click_function.samples:
+                    arm_idx = subcampaign_algo.gaussian_process.find_arm(arm)
+                    subcampaign_algo.gaussian_process.update_observations(arm_idx, sample)
+            subcampaign_algo.gaussian_process.update_model()
 
 ############################################
 ## Plot results
@@ -164,20 +190,21 @@ for i in range(num_subcampaigns):
     plt.savefig(plot_path + 'pulled_arms_subcampaign_' + str(i+1) + '.png', bbox_inches='tight', dpi = 300)
     plt.close()
 
-legend = []
-for i in range(num_subcampaigns):
-    plt.plot(regression_errors_max[i])
-    legend.append("Subcampaign " + str(i+1))
-plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
-plt.title("Subcampaigns' regression error (Max)")
-plt.savefig(plot_path + 'regression_errors_max.png', bbox_inches='tight', dpi = 300)
-plt.close()
+# TODO: run only when without context generation
+# legend = []
+# for i in range(num_subcampaigns):
+#     plt.plot(regression_errors_max[i])
+#     legend.append("Subcampaign " + str(i+1))
+# plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
+# plt.title("Subcampaigns' regression error (Max)")
+# plt.savefig(plot_path + 'regression_errors_max.png', bbox_inches='tight', dpi = 300)
+# plt.close()
 
-legend = []
-for i in range(num_subcampaigns):
-    plt.plot(regression_errors_sum[i])
-    legend.append("Subcampaign " + str(i+1))
-plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
-plt.title("Subcampaigns' regression error (Sum)")
-plt.savefig(plot_path + 'regression_errors_sum.png', bbox_inches='tight', dpi = 300)
-plt.close()
+# legend = []
+# for i in range(num_subcampaigns):
+#     plt.plot(regression_errors_sum[i])
+#     legend.append("Subcampaign " + str(i+1))
+# plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
+# plt.title("Subcampaigns' regression error (Sum)")
+# plt.savefig(plot_path + 'regression_errors_sum.png', bbox_inches='tight', dpi = 300)
+# plt.close()

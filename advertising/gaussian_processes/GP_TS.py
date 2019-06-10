@@ -22,7 +22,7 @@ class GP_TS:
         self.gaussian_process.fit(x, y)
         self.means, self.sigmas = self.gaussian_process.predict(np.atleast_2d(self.arms).T, return_std=True)
         self.sigmas = np.maximum(self.sigmas, 1e-4) #sigmas must be positive
-        self.predicted_arms = np.random.normal(self.means, self.sigmas)
+        self.predicted_arms = np.random.normal(self.means, self.sigmas + (10 / len(self.pulled_arms)))
         self.predicted_arms = np.maximum(0, self.predicted_arms) # predictions must be nonnegative (for the knapsack)
 
     # Add the new observation in the model
@@ -44,3 +44,25 @@ class GP_TS:
             if self.arms[idx] == arm:
                 return idx
         return False
+
+    # Get the regression error (MSE) with respect to the training samples for a given arm
+    def get_arm_average_regression_error(self, arm):
+        total_squared_error = 0
+        count = 0
+
+        for (pulled_arm, collected_reward) in zip(self.pulled_arms, self.collected_rewards):
+            if pulled_arm == arm:
+                count += 1
+                x = self.means[self.find_arm(arm)]
+                total_squared_error += (x - collected_reward)**2
+
+        if count == 0:
+            return -1
+        return total_squared_error / count
+
+    def get_average_regression_error(self):
+        total_squared_error = 0
+        for (pulled_arm, collected_reward) in zip(self.pulled_arms, self.collected_rewards):
+            x = self.means[self.find_arm(pulled_arm)]
+            total_squared_error += (x - collected_reward)**2
+        return total_squared_error / len(self.pulled_arms)

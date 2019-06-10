@@ -24,9 +24,9 @@ class Knapsack:
         temp_l = []
 
         # Perform knapsack optimization
-        self.knapsack_optimization(results, 1, 1, 1, len(self.budgets), len(self.budgets), (0, 0), temp_l)
+        #self.knapsack_optimization(results, 1, 1, 1, len(self.budgets), len(self.budgets), (0, 0), temp_l)
 
-        #res, self.combinations = self.knapsack_optimization_2()
+        res, self.combinations = self.knapsack_optimization_2()
 
         # Compute the assignment from the knapsack optimization results
         return self.compute_assignment(self.combinations[-1][-1], self.combinations.copy())

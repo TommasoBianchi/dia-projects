@@ -4,6 +4,7 @@ from knapsack.knapsack import Knapsack
 
 from utilities.environment_building import build_environment
 from utilities.plot_function import plot_function
+from utilities.rounding import round_to_nearest_feasible_superarm
 
 from config.test_config import get_configuration as get_test_configuration
 
@@ -14,7 +15,7 @@ import numpy as np
 ## Configurations
 ############################################
 
-timesteps = 250
+timesteps = 150
 daily_budget = 100
 budget_discretization_density = 10
 budget_discretization_steps = [i * daily_budget / budget_discretization_density for i in range(budget_discretization_density + 1)]
@@ -84,6 +85,9 @@ rewards = []
 clairvoyant_rewards = [optimal_super_arm_value for _ in range(timesteps)]
 disaggregated_clairvoyant_rewards = [optimal_disaggregated_super_arm_value for _ in range(timesteps)]
 
+regression_errors_max = [[] for _ in range(num_subcampaigns)]
+regression_errors_sum = [[] for _ in range(num_subcampaigns)]
+
 for t in range(timesteps):
 
     # Sample from the subcampaign_algos to get clicks estimations
@@ -101,6 +105,7 @@ for t in range(timesteps):
     # Fix for first day
     if t == 0:
         super_arm = [(i, daily_budget / num_subcampaigns) for i in range(num_subcampaigns)]
+        super_arm = round_to_nearest_feasible_superarm(super_arm, budget_discretization_steps)
 
     # Collect rewards and update subcampaign_algos
     total_reward = 0
@@ -115,19 +120,27 @@ for t in range(timesteps):
 
     rewards.append(total_reward)
 
+    for i in range(num_subcampaigns):
+        regression_errors_max[i].append(subcampaign_algos[i].get_regression_error())
+        regression_errors_sum[i].append(subcampaign_algos[i].get_regression_error(use_sum = True))
+
 ############################################
 ## Plot results
 ############################################
 
-plt.plot(np.cumsum(rewards))
-plt.plot(np.cumsum(clairvoyant_rewards))
-plt.plot(np.cumsum(disaggregated_clairvoyant_rewards))
+cumulative_reward = np.cumsum(rewards)
+cumulative_clairvoyant_reward = np.cumsum(clairvoyant_rewards)
+cumulative_disaggregated_clairvoyant_reward = np.cumsum(disaggregated_clairvoyant_rewards)
+
+plt.plot(cumulative_reward)
+plt.plot(cumulative_clairvoyant_reward)
+plt.plot(cumulative_disaggregated_clairvoyant_reward)
 plt.legend(['GPTS', 'Clairvoyant', 'Disaggregated clairvoyant'], bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title("Cumulative reward")
 plt.savefig(plot_path + 'cumulative_reward.png', bbox_inches='tight', dpi = 300)
 plt.close()
 
-plt.plot([(clairvoyant_rewards[i] - rewards[i]) / (i+1) for i in range(len(rewards))])
+plt.plot([(cumulative_clairvoyant_reward[i] - cumulative_reward[i]) / (i+1) for i in range(len(rewards))])
 plt.legend(['GPTS'], bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title("Average regret")
 plt.savefig(plot_path + 'average_regret.png', bbox_inches='tight', dpi = 300)
@@ -135,8 +148,36 @@ plt.close()
 
 for i in range(num_subcampaigns):
     plot_function(environment.subcampaigns[i].get_real, range(daily_budget))
-    plt.plot(range(daily_budget), [subcampaign_algos[i].gaussian_process.gaussian_process.predict(np.atleast_2d(x).T) for x in range(daily_budget)])
+    
+    gp = subcampaign_algos[i].gaussian_process.gaussian_process
+    mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0]
+    std_function = lambda x: gp.predict(np.atleast_2d(x).T, return_std = True)[1][0]
+    plot_function(mean_function, range(daily_budget), std_function)
+    
     plt.legend(['Real click function', 'Estimated click function'], bbox_to_anchor = (1.05, 1), loc = 2)
     plt.title("Subcampaign " + str(i+1))
     plt.savefig(plot_path + 'subcampaign_estimation_' + str(i+1) + '.png', bbox_inches='tight', dpi = 300)
     plt.close()
+
+    plot_function(lambda x: subcampaign_algos[i].get_pulled_arms_amount(x) if (x in budget_discretization_steps) else 0, range(daily_budget))
+    plt.title("Subcampaign " + str(i+1) + " number of pulled arms")
+    plt.savefig(plot_path + 'pulled_arms_subcampaign_' + str(i+1) + '.png', bbox_inches='tight', dpi = 300)
+    plt.close()
+
+legend = []
+for i in range(num_subcampaigns):
+    plt.plot(regression_errors_max[i])
+    legend.append("Subcampaign " + str(i+1))
+plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
+plt.title("Subcampaigns' regression error (Max)")
+plt.savefig(plot_path + 'regression_errors_max.png', bbox_inches='tight', dpi = 300)
+plt.close()
+
+legend = []
+for i in range(num_subcampaigns):
+    plt.plot(regression_errors_sum[i])
+    legend.append("Subcampaign " + str(i+1))
+plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
+plt.title("Subcampaigns' regression error (Sum)")
+plt.savefig(plot_path + 'regression_errors_sum.png', bbox_inches='tight', dpi = 300)
+plt.close()

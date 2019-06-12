@@ -14,6 +14,9 @@ class Subcampaign:
             val = val + c.real_function_value(x / len(self.classes))
         return val
 
+    def get_classes_ids(self):
+        return tuple([c.id for c in self.classes])
+
     def disaggregate(self):
         class_indices = list(range(len(self.classes)))
         all_partitions = partition(class_indices)

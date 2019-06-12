@@ -3,7 +3,7 @@ import numpy as np
 class Click_Function:
 
     #noise : Probability_Distribution
-    def __init__(self, noise, max_height, offset, speed, calculateOffset = True):
+    def __init__(self, noise, max_height, offset, speed, id, calculateOffset = True):
         self.noise = noise
         self.max_height = max_height
         if calculateOffset:
@@ -12,6 +12,7 @@ class Click_Function:
             self.offset = offset
         self.speed = speed
         self.samples = []
+        self.id = id
         
     def sample(self, x):
         sample = self.real_function_value(x) + self.noise.sample()
@@ -22,6 +23,6 @@ class Click_Function:
         return max(0, (self.max_height - (self.offset * np.exp(-self.speed*x)) ))
 
     def copy(self):
-        cf = Click_Function(self.noise, self.max_height, self.offset, self.speed, calculateOffset = False)
+        cf = Click_Function(self.noise, self.max_height, self.offset, self.speed, self.id, calculateOffset = False)
         cf.samples = self.samples.copy()
         return cf

@@ -6,6 +6,7 @@ from knapsack.knapsack import Knapsack
 from utilities.environment_building import build_environment
 from utilities.plot_function import plot_function
 from utilities.rounding import round_to_nearest_feasible_superarm
+from utilities.print_functions import prettify_super_arm
 
 from config.test_config import get_configuration as get_test_configuration
 
@@ -16,7 +17,7 @@ import numpy as np
 ## Configurations
 ############################################
 
-timesteps = 31
+timesteps = 100
 context_generation_rate = 15
 daily_budget = 100
 budget_discretization_density = 10
@@ -63,7 +64,7 @@ real_values = []
 for subcampaign in original_environment.subcampaigns:
     real_values.append([subcampaign.get_real(arm) for arm in budget_discretization_steps])
 optimal_super_arm = Knapsack(daily_budget, real_values).optimize()
-print("Optimal superarm is " + str(optimal_super_arm))
+print("Optimal superarm is " + prettify_super_arm(original_environment, optimal_super_arm))
 optimal_super_arm_value = sum([original_environment.subcampaigns[i].get_real(arm) for (i, arm) in optimal_super_arm])
 print("Value of optimal superarm = " + str(optimal_super_arm_value))
 
@@ -77,7 +78,7 @@ for subcampaign in original_environment.subcampaigns:
         subclasses_dict[subclass_index] = subclass
         subclass_index += 1
 optimal_disaggregated_super_arm = Knapsack(daily_budget, real_values).optimize()
-print("Optimal disaggregated superarm is " + str(optimal_disaggregated_super_arm))
+print("Optimal disaggregated superarm is " + str([(subclasses_dict[i].id, arm) for (i, arm) in optimal_disaggregated_super_arm]))
 optimal_disaggregated_super_arm_value = sum([subclasses_dict[i].real_function_value(arm) for (i, arm) in optimal_disaggregated_super_arm])
 print("Value of optimal disaggregated superarm = " + str(optimal_disaggregated_super_arm_value))
 
@@ -122,7 +123,7 @@ for t in range(timesteps):
         subcampaign_algos[subcampaign_id].update(budget_assigned, sum(reward))
     
     print("-------------------------")
-    print("t = " + str(t+1) + ", superarm = " + str(super_arm) + ", reward = " + str(total_reward))
+    print("t = " + str(t+1) + ", superarm = " + prettify_super_arm(environment, super_arm) + ", reward = " + str(total_reward))
     print("-------------------------")
 
     rewards.append(total_reward)

@@ -27,7 +27,12 @@ class GP_TS:
 
     # Add the new observation in the model
     def update_observations(self, arm_idx, reward):
-        self.pulled_arms.append(self.arms[arm_idx])
+        self.update_observations_raw(self.arms[arm_idx], reward)
+
+    # Add the new observation in the model (pass directly the arm value, not the arm index)
+    # x can be any point, not only an arm value
+    def update_observations_raw(self, x, reward):
+        self.pulled_arms.append(x)
         self.collected_rewards = np.append(self.collected_rewards, reward)
 
     # Get the prediction of a given arm

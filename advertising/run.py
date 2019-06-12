@@ -16,8 +16,8 @@ import numpy as np
 ## Configurations
 ############################################
 
-timesteps = 100
-context_generation_rate = 10
+timesteps = 31
+context_generation_rate = 15
 daily_budget = 100
 budget_discretization_density = 10
 budget_discretization_steps = [i * daily_budget / budget_discretization_density for i in range(budget_discretization_density + 1)]
@@ -144,10 +144,8 @@ for t in range(timesteps):
         # Retrain gaussian processes
         for subcampaign_id in range(num_subcampaigns):
             subcampaign_algo = subcampaign_algos[subcampaign_id]
-            for click_function in environment.get_subcampaign(subcampaign_id).classes:
-                for (arm, sample) in click_function.samples:
-                    arm_idx = subcampaign_algo.gaussian_process.find_arm(arm)
-                    subcampaign_algo.gaussian_process.update_observations(arm_idx, sample)
+            for (arm, sample) in environment.get_subcampaign(subcampaign_id).get_samples():
+                subcampaign_algo.gaussian_process.update_observations_raw(arm, sample)
             subcampaign_algo.gaussian_process.update_model()
 
 ############################################

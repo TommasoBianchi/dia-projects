@@ -15,6 +15,8 @@ def disaggregate_context(environment, arms, budget, max_aggregation_factor):
 	optimal_disaggregation = None
 	optimal_disaggregation_expected_value = -np.inf
 
+	first = -1
+
 	for disaggregation in all_disaggregations:
 		# Generate lower bounds
 		lower_bounds = []
@@ -31,7 +33,7 @@ def disaggregate_context(environment, arms, budget, max_aggregation_factor):
 				if len(arm_rewards) > 0:
 					arm_mean = np.mean(arm_rewards)
 					arm_std = np.std(arm_rewards)
-					arm_lower_bound = arm_mean - 1.96 * arm_std
+					arm_lower_bound = arm_mean - 1.96 * (arm_std / np.sqrt(len(arm_rewards)))
 				else:
 					arm_lower_bound = -np.inf
 				subcampaign_lower_bounds.append(arm_lower_bound)
@@ -46,6 +48,12 @@ def disaggregate_context(environment, arms, budget, max_aggregation_factor):
 			optimal_disaggregation_expected_value = optimal_super_arm_value
 			optimal_disaggregation = disaggregation
 
-	print(optimal_disaggregation)
+		## TEST
+		if first == -1:
+			first = optimal_super_arm_value
+
+	print(all_disaggregations[0])
+	print(first)
+	print(optimal_disaggregation_expected_value)
 
 	environment.subcampaigns = optimal_disaggregation

@@ -2,12 +2,15 @@ import math
 import numpy as np
 
 class Knapsack:
-    def __init__(self, budget, values):
+    def __init__(self, budget, values, arms = None):
         self.subcampaigns_number = len(values) + 1
         self.subcampaigns_list = list(range(len(values)))
         step = budget / (len(values[0])-1)
 
         self.budgets = [ i*step for i in range(len(values[0])) ] #list(range(0, budget + step_1, step_1))
+        if arms != None:
+            self.budgets = arms
+
         self.budget_value = budget
         self.combinations = []
 

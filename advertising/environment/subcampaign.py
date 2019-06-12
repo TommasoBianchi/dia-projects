@@ -25,5 +25,12 @@ class Subcampaign:
             subcampaigns.append(p_subcampaigns)
         return subcampaigns
 
+    def get_samples(self):
+        samples = []
+        for t in range(len(self.classes[0].samples)):
+            iteration_samples = [c.samples[t] for c in self.classes]
+            samples.append((sum([x[0] for x in iteration_samples]), sum([x[1] for x in iteration_samples])))
+        return samples
+
     def copy(self):
         return Subcampaign([c.copy() for c in self.classes])

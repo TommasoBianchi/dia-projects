@@ -21,7 +21,8 @@ context_generation_rate = 10
 daily_budget = 100
 budget_discretization_density = 10
 budget_discretization_steps = [i * daily_budget / budget_discretization_density for i in range(budget_discretization_density + 1)]
-plot_path = "plots/"
+#plot_path = "plots/"
+plot_path = "advertising/plots/"
 
 ############################################
 ## Build the original_environment
@@ -29,6 +30,7 @@ plot_path = "plots/"
 
 original_environment = build_environment(get_test_configuration())
 num_subcampaigns = len(original_environment.subcampaigns)
+max_aggregation_factor = max([len(s.classes) for s in original_environment.subcampaigns])
 
 ############################################
 ## Plot original_environment data
@@ -133,9 +135,7 @@ for t in range(timesteps):
     # Context generation
     if (t+1) % context_generation_rate == 0:
         # Disaggreagate contexts
-        disaggregate_context(environment)
-
-        context_generation_rate = 9999999
+        disaggregate_context(environment, budget_discretization_steps, daily_budget, max_aggregation_factor)
 
         # Update parameters
         num_subcampaigns = len(environment.subcampaigns)

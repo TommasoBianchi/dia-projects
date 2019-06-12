@@ -1,11 +1,10 @@
 from experiment.subcampaign_algo import Subcampaign_algo
-from experiment.context_generation import disaggregate_context
+from experiment.experiment import Experiment
 
 from knapsack.knapsack import Knapsack
 
 from utilities.environment_building import build_environment
 from utilities.plot_function import plot_function
-from utilities.rounding import round_to_nearest_feasible_superarm
 from utilities.print_functions import prettify_super_arm
 
 from config.test_config import get_configuration as get_test_configuration
@@ -18,12 +17,13 @@ import numpy as np
 ############################################
 
 timesteps = 100
-context_generation_rate = 15
+context_generation_rate = 10
 daily_budget = 100
 budget_discretization_density = 10
 budget_discretization_steps = [i * daily_budget / budget_discretization_density for i in range(budget_discretization_density + 1)]
-#plot_path = "plots/"
-plot_path = "advertising/plots/"
+
+plot_path = "plots/"
+#plot_path = "advertising/plots/"
 
 ############################################
 ## Build the original_environment
@@ -31,29 +31,37 @@ plot_path = "advertising/plots/"
 
 original_environment = build_environment(get_test_configuration())
 num_subcampaigns = len(original_environment.subcampaigns)
-max_aggregation_factor = max([len(s.classes) for s in original_environment.subcampaigns])
 
 ############################################
 ## Plot original_environment data
 ############################################
 
 legend = []
-for i in range(num_subcampaigns):
-    plot_function(original_environment.subcampaigns[i].get_real, range(daily_budget))
-    plot_function(lambda x: sum(original_environment.subcampaigns[i].sample(x)), range(daily_budget))
-    legend.append("Subcampaign " + str(i+1) + " real click function")
-    legend.append("Subcampaign " + str(i+1) + " noisy click function")
+for subcampaign in original_environment.subcampaigns:
+    subcampaign_name = str(subcampaign.get_classes_ids())
+    plot_function(subcampaign.get_real, range(daily_budget))
+    plot_function(lambda x: sum(subcampaign.sample(x)), range(daily_budget))
+    legend.append("Subcampaign " + subcampaign_name + " real click function")
+    legend.append("Subcampaign " + subcampaign_name + " noisy click function")
 
 plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
-plt.title("Environment")
-plt.savefig(plot_path + 'environment.png', bbox_inches='tight', dpi = 300)
+plt.title("Environment - Aggregated")
+plt.savefig(plot_path + 'environment_aggregated.png', bbox_inches='tight', dpi = 300)
 plt.close()
 
-############################################
-## Build the subcampaign algos
-############################################
+legend = []
+for subcampaign in original_environment.subcampaigns:
+    for click_function in subcampaign.classes:
+        subcampaign_name = str((click_function.id))
+        plot_function(click_function.real_function_value, range(daily_budget))
+        plot_function(click_function.sample, range(daily_budget))
+        legend.append("Subcampaign " + subcampaign_name + " real click function")
+        legend.append("Subcampaign " + subcampaign_name + " noisy click function")
 
-subcampaign_algos = [Subcampaign_algo(budget_discretization_steps.copy()) for _ in range(num_subcampaigns)]
+plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
+plt.title("Environment - Disaggreagated")
+plt.savefig(plot_path + 'environment_disaggregated.png', bbox_inches='tight', dpi = 300)
+plt.close()
 
 ############################################
 ## Build the clairvoyant solution
@@ -82,128 +90,114 @@ print("Optimal disaggregated superarm is " + str([(subclasses_dict[i].id, arm) f
 optimal_disaggregated_super_arm_value = sum([subclasses_dict[i].real_function_value(arm) for (i, arm) in optimal_disaggregated_super_arm])
 print("Value of optimal disaggregated superarm = " + str(optimal_disaggregated_super_arm_value))
 
-############################################
-## Main loop
-############################################
-
-rewards = []
 clairvoyant_rewards = [optimal_super_arm_value for _ in range(timesteps)]
 disaggregated_clairvoyant_rewards = [optimal_disaggregated_super_arm_value for _ in range(timesteps)]
 
-# TODO: run only when without context generation
-# regression_errors_max = [[] for _ in range(num_subcampaigns)]
-# regression_errors_sum = [[] for _ in range(num_subcampaigns)]
+############################################
+## Perform experiments
+############################################
 
-environment = original_environment.copy()
+experiment = Experiment(original_environment, budget_discretization_steps, daily_budget)
 
-for t in range(timesteps):
+print("------ GPTS stationary ------")
+(stationary_rewards, stationary_final_environment, stationary_final_subcampaign_algos,
+ regression_errors_max, regression_errors_sum) = experiment.perform(timesteps)
 
-    # Sample from the subcampaign_algos to get clicks estimations
-    estimations = []
-    for subcampaign_algo in subcampaign_algos:
-        estimate = [subcampaign_algo.sample_from_gp(arm) for arm in budget_discretization_steps]
-        if(sum(estimate) == 0):
-            estimate = [i * 1e-3 for i in range(len(budget_discretization_steps))]
-        estimate[0] = 0
-        estimations.append(estimate)
-
-    # Run knapsack optimization
-    super_arm = Knapsack(daily_budget, estimations).optimize()
-
-    # Fix for first day
-    if t == 0:
-        super_arm = [(i, daily_budget / num_subcampaigns) for i in range(num_subcampaigns)]
-        super_arm = round_to_nearest_feasible_superarm(super_arm, budget_discretization_steps)
-
-    # Collect rewards and update subcampaign_algos
-    total_reward = 0
-    for (subcampaign_id, budget_assigned) in super_arm:
-        reward = environment.get_subcampaign(subcampaign_id).sample(budget_assigned)
-        total_reward += sum(reward)
-        subcampaign_algos[subcampaign_id].update(budget_assigned, sum(reward))
-    
-    print("-------------------------")
-    print("t = " + str(t+1) + ", superarm = " + prettify_super_arm(environment, super_arm) + ", reward = " + str(total_reward))
-    print("-------------------------")
-
-    rewards.append(total_reward)
-
-    # TODO: run only when without context generation
-    # for i in range(num_subcampaigns):
-    #     regression_errors_max[i].append(subcampaign_algos[i].get_regression_error())
-    #     regression_errors_sum[i].append(subcampaign_algos[i].get_regression_error(use_sum = True))
-
-    # Context generation
-    if (t+1) % context_generation_rate == 0:
-        # Disaggreagate contexts
-        disaggregate_context(environment, budget_discretization_steps, daily_budget, max_aggregation_factor)
-
-        # Update parameters
-        num_subcampaigns = len(environment.subcampaigns)
-        subcampaign_algos = [Subcampaign_algo(budget_discretization_steps.copy()) for _ in range(num_subcampaigns)]
-        
-        # Retrain gaussian processes
-        for subcampaign_id in range(num_subcampaigns):
-            subcampaign_algo = subcampaign_algos[subcampaign_id]
-            for (arm, sample) in environment.get_subcampaign(subcampaign_id).get_samples():
-                subcampaign_algo.gaussian_process.update_observations_raw(arm, sample)
-            subcampaign_algo.gaussian_process.update_model()
+print("------ GPTS context generation ------")
+(context_generation_rewards, context_generation_final_environment,
+ context_generation_final_subcampaign_algos) = experiment.perform(timesteps, context_generation_rate)
 
 ############################################
 ## Plot results
 ############################################
 
-cumulative_reward = np.cumsum(rewards)
+cumulative_stationary_reward = np.cumsum(stationary_rewards)
+cumulative_context_generation_reward = np.cumsum(context_generation_rewards)
 cumulative_clairvoyant_reward = np.cumsum(clairvoyant_rewards)
 cumulative_disaggregated_clairvoyant_reward = np.cumsum(disaggregated_clairvoyant_rewards)
 
-plt.plot(cumulative_reward)
+# Cumulative rewards
+
+plt.plot(cumulative_stationary_reward)
+plt.plot(cumulative_context_generation_reward)
 plt.plot(cumulative_clairvoyant_reward)
 plt.plot(cumulative_disaggregated_clairvoyant_reward)
-plt.legend(['GPTS', 'Clairvoyant', 'Disaggregated clairvoyant'], bbox_to_anchor = (1.05, 1), loc = 2)
+plt.legend(['GPTS - Stationary', 'GPTS - Context generation', 'Clairvoyant', 'Clairvoyant - Optimal context'], bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title("Cumulative reward")
 plt.savefig(plot_path + 'cumulative_reward.png', bbox_inches='tight', dpi = 300)
 plt.close()
 
-plt.plot([(cumulative_clairvoyant_reward[i] - cumulative_reward[i]) / (i+1) for i in range(len(rewards))])
-plt.legend(['GPTS'], bbox_to_anchor = (1.05, 1), loc = 2)
+# Average regrets
+
+plt.plot([(cumulative_clairvoyant_reward[i] - cumulative_stationary_reward[i]) / (i+1) for i in range(len(cumulative_stationary_reward))])
+plt.plot([(cumulative_disaggregated_clairvoyant_reward[i] - cumulative_context_generation_reward[i]) / (i+1) for i in range(len(cumulative_context_generation_reward))])
+plt.legend(['GPTS - Stationary', 'GPTS - Context generation'], bbox_to_anchor = (1.05, 1), loc = 2)
 plt.title("Average regret")
 plt.savefig(plot_path + 'average_regret.png', bbox_inches='tight', dpi = 300)
 plt.close()
 
-for i in range(num_subcampaigns):
-    plot_function(environment.subcampaigns[i].get_real, range(daily_budget))
+# GP estimations and number of pulls per arm - stationary
+
+for i in range(len(stationary_final_environment.subcampaigns)):
+    subcampaign = stationary_final_environment.subcampaigns[i]
+    subcampaign_name = str(subcampaign.get_classes_ids())
+    plot_function(subcampaign.get_real, range(daily_budget))
     
-    gp = subcampaign_algos[i].gaussian_process.gaussian_process
+    gp = stationary_final_subcampaign_algos[i].gaussian_process.gaussian_process
     mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0]
     std_function = lambda x: gp.predict(np.atleast_2d(x).T, return_std = True)[1][0]
     plot_function(mean_function, range(daily_budget), std_function)
     
     plt.legend(['Real click function', 'Estimated click function'], bbox_to_anchor = (1.05, 1), loc = 2)
-    plt.title("Subcampaign " + str(i+1))
-    plt.savefig(plot_path + 'subcampaign_estimation_' + str(i+1) + '.png', bbox_inches='tight', dpi = 300)
+    plt.title("Subcampaign " + subcampaign_name)
+    plt.savefig(plot_path + 'stationary_subcampaign_estimation_' + subcampaign_name + '.png', bbox_inches='tight', dpi = 300)
     plt.close()
 
-    plot_function(lambda x: subcampaign_algos[i].get_pulled_arms_amount(x) if (x in budget_discretization_steps) else 0, range(daily_budget))
-    plt.title("Subcampaign " + str(i+1) + " number of pulled arms")
-    plt.savefig(plot_path + 'pulled_arms_subcampaign_' + str(i+1) + '.png', bbox_inches='tight', dpi = 300)
+    plot_function(lambda x: stationary_final_subcampaign_algos[i].get_pulled_arms_amount(x) if (x in budget_discretization_steps) else 0, range(daily_budget))
+    plt.title("Subcampaign " + subcampaign_name + " number of pulled arms")
+    plt.savefig(plot_path + 'stationary_pulled_arms_subcampaign_' + subcampaign_name + '.png', bbox_inches='tight', dpi = 300)
     plt.close()
 
-# TODO: run only when without context generation
-# legend = []
-# for i in range(num_subcampaigns):
-#     plt.plot(regression_errors_max[i])
-#     legend.append("Subcampaign " + str(i+1))
-# plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
-# plt.title("Subcampaigns' regression error (Max)")
-# plt.savefig(plot_path + 'regression_errors_max.png', bbox_inches='tight', dpi = 300)
-# plt.close()
+# GP estimations and number of pulls per arm - context_generation
 
-# legend = []
-# for i in range(num_subcampaigns):
-#     plt.plot(regression_errors_sum[i])
-#     legend.append("Subcampaign " + str(i+1))
-# plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
-# plt.title("Subcampaigns' regression error (Sum)")
-# plt.savefig(plot_path + 'regression_errors_sum.png', bbox_inches='tight', dpi = 300)
-# plt.close()
+for i in range(len(context_generation_final_environment.subcampaigns)):
+    subcampaign = context_generation_final_environment.subcampaigns[i]
+    subcampaign_name = str(subcampaign.get_classes_ids())
+    plot_function(subcampaign.get_real, range(daily_budget))
+    
+    gp = context_generation_final_subcampaign_algos[i].gaussian_process.gaussian_process
+    mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0]
+    std_function = lambda x: gp.predict(np.atleast_2d(x).T, return_std = True)[1][0]
+    plot_function(mean_function, range(daily_budget), std_function)
+    
+    plt.legend(['Real click function', 'Estimated click function'], bbox_to_anchor = (1.05, 1), loc = 2)
+    plt.title("Subcampaign " + subcampaign_name)
+    plt.savefig(plot_path + 'context_generation_subcampaign_estimation_' + subcampaign_name + '.png', bbox_inches='tight', dpi = 300)
+    plt.close()
+
+    plot_function(lambda x: context_generation_final_subcampaign_algos[i].get_pulled_arms_amount(x) if (x in budget_discretization_steps) else 0, range(daily_budget))
+    plt.title("Subcampaign " + subcampaign_name + " number of pulled arms")
+    plt.savefig(plot_path + 'context_generation_pulled_arms_subcampaign_' + subcampaign_name + '.png', bbox_inches='tight', dpi = 300)
+    plt.close()
+
+# Subcampaign regression errors (run only for the stationary case)
+
+legend = []
+for i in range(len(stationary_final_environment.subcampaigns)):
+    plt.plot(regression_errors_max[i])
+    subcampaign_name = str(context_generation_final_environment.subcampaigns[i].get_classes_ids())
+    legend.append("Subcampaign " + subcampaign_name)
+plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
+plt.title("Subcampaign regression error (Max)")
+plt.savefig(plot_path + 'regression_errors_max.png', bbox_inches='tight', dpi = 300)
+plt.close()
+
+legend = []
+for i in range(len(stationary_final_environment.subcampaigns)):
+    plt.plot(regression_errors_sum[i])
+    subcampaign_name = str(context_generation_final_environment.subcampaigns[i].get_classes_ids())
+    legend.append("Subcampaign " + subcampaign_name)
+plt.legend(legend, bbox_to_anchor = (1.05, 1), loc = 2)
+plt.title("Subcampaign regression error (Sum)")
+plt.savefig(plot_path + 'regression_errors_sum.png', bbox_inches='tight', dpi = 300)
+plt.close()

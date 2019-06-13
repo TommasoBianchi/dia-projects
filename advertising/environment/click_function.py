@@ -14,9 +14,10 @@ class Click_Function:
         self.samples = []
         self.id = id
         
-    def sample(self, x):
+    def sample(self, x, save_sample = True):
         sample = self.real_function_value(x) + self.noise.sample()
-        self.samples.append((x, sample))
+        if save_sample:
+            self.samples.append((x, sample))
         return sample
 
     def real_function_value(self, x):

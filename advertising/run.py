@@ -1,4 +1,3 @@
-from experiment.subcampaign_algo import Subcampaign_algo
 from experiment.experiment import Experiment
 
 from knapsack.knapsack import Knapsack
@@ -16,8 +15,9 @@ import numpy as np
 ## Configurations
 ############################################
 
-timesteps = 100
-context_generation_rate = 10
+timesteps_stationary = 250
+timesteps_context_generation = 250
+context_generation_rate = 25
 daily_budget = 100
 budget_discretization_density = 10
 budget_discretization_steps = [i * daily_budget / budget_discretization_density for i in range(budget_discretization_density + 1)]
@@ -30,6 +30,7 @@ plot_path = "plots/"
 ############################################
 
 original_environment = build_environment(get_test_configuration())
+
 num_subcampaigns = len(original_environment.subcampaigns)
 
 ############################################
@@ -40,7 +41,7 @@ legend = []
 for subcampaign in original_environment.subcampaigns:
     subcampaign_name = str(subcampaign.get_classes_ids())
     plot_function(subcampaign.get_real, range(daily_budget))
-    plot_function(lambda x: sum(subcampaign.sample(x)), range(daily_budget))
+    plot_function(lambda x: sum(subcampaign.sample(x, save_sample = False)), range(daily_budget))
     legend.append("Subcampaign " + subcampaign_name + " real click function")
     legend.append("Subcampaign " + subcampaign_name + " noisy click function")
 
@@ -54,7 +55,7 @@ for subcampaign in original_environment.subcampaigns:
     for click_function in subcampaign.classes:
         subcampaign_name = str((click_function.id))
         plot_function(click_function.real_function_value, range(daily_budget))
-        plot_function(click_function.sample, range(daily_budget))
+        plot_function(lambda x: click_function.sample(x, save_sample = False), range(daily_budget))
         legend.append("Subcampaign " + subcampaign_name + " real click function")
         legend.append("Subcampaign " + subcampaign_name + " noisy click function")
 
@@ -90,8 +91,8 @@ print("Optimal disaggregated superarm is " + str([(subclasses_dict[i].id, arm) f
 optimal_disaggregated_super_arm_value = sum([subclasses_dict[i].real_function_value(arm) for (i, arm) in optimal_disaggregated_super_arm])
 print("Value of optimal disaggregated superarm = " + str(optimal_disaggregated_super_arm_value))
 
-clairvoyant_rewards = [optimal_super_arm_value for _ in range(timesteps)]
-disaggregated_clairvoyant_rewards = [optimal_disaggregated_super_arm_value for _ in range(timesteps)]
+clairvoyant_rewards = [optimal_super_arm_value for _ in range(timesteps_stationary)]
+disaggregated_clairvoyant_rewards = [optimal_disaggregated_super_arm_value for _ in range(timesteps_context_generation)]
 
 ############################################
 ## Perform experiments
@@ -101,11 +102,11 @@ experiment = Experiment(original_environment, budget_discretization_steps, daily
 
 print("------ GPTS stationary ------")
 (stationary_rewards, stationary_final_environment, stationary_final_subcampaign_algos,
- regression_errors_max, regression_errors_sum) = experiment.perform(timesteps)
+ regression_errors_max, regression_errors_sum) = experiment.perform(timesteps_stationary)
 
 print("------ GPTS context generation ------")
 (context_generation_rewards, context_generation_final_environment,
- context_generation_final_subcampaign_algos) = experiment.perform(timesteps, context_generation_rate)
+ context_generation_final_subcampaign_algos) = experiment.perform(timesteps_context_generation, context_generation_rate)
 
 ############################################
 ## Plot results
@@ -144,7 +145,7 @@ for i in range(len(stationary_final_environment.subcampaigns)):
     plot_function(subcampaign.get_real, range(daily_budget))
     
     gp = stationary_final_subcampaign_algos[i].gaussian_process.gaussian_process
-    mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0]
+    mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0] + x
     std_function = lambda x: gp.predict(np.atleast_2d(x).T, return_std = True)[1][0]
     plot_function(mean_function, range(daily_budget), std_function)
     
@@ -166,7 +167,8 @@ for i in range(len(context_generation_final_environment.subcampaigns)):
     plot_function(subcampaign.get_real, range(daily_budget))
     
     gp = context_generation_final_subcampaign_algos[i].gaussian_process.gaussian_process
-    mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0]
+    
+    mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0] + x
     std_function = lambda x: gp.predict(np.atleast_2d(x).T, return_std = True)[1][0]
     plot_function(mean_function, range(daily_budget), std_function)
     

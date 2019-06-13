@@ -17,9 +17,12 @@ class Experiment:
 
         environment = self.environment.copy()
         num_subcampaigns = len(environment.subcampaigns)
-        max_aggregation_factor = max([len(s.classes) for s in environment.subcampaigns])
 
         subcampaign_algos = [Subcampaign_algo(self.budget_discretization_steps.copy()) for _ in range(num_subcampaigns)]
+        for i in range(num_subcampaigns):
+            samples = [[k * self.daily_budget / 50 for k in range(51)],
+                       [sum(environment.get_subcampaign(i).sample(k * self.daily_budget /50, save_sample = False)) for k in range(51)]]
+            subcampaign_algos[i].learn_gp_kernel_hyperparameters(samples)
 
         # Run only when without context generation
         if context_generation_rate < 0:
@@ -50,8 +53,10 @@ class Experiment:
             for (subcampaign_id, budget_assigned) in super_arm:
                 reward = environment.get_subcampaign(subcampaign_id).sample(budget_assigned)
                 total_reward += sum(reward)
-                subcampaign_algos[subcampaign_id].update(budget_assigned, sum(reward))
-            
+
+                # Fit multiple point to the GPs (one per each class of user inside this subcampaing)
+                subcampaign_algos[subcampaign_id].update(budget_assigned, reward)
+
             print("-------------------------")
             print("t = " + str(t+1) + ", superarm = " + prettify_super_arm(environment, super_arm) + ", reward = " + str(total_reward))
 
@@ -70,17 +75,22 @@ class Experiment:
                 print("t = " + str(t+1) + ", performing context generation")
 
                 # Disaggreagate contexts
-                disaggregate_context(environment, self.budget_discretization_steps, self.daily_budget, max_aggregation_factor)
+                disaggregate_context(environment, self.budget_discretization_steps, self.daily_budget)
 
                 # Update parameters
                 num_subcampaigns = len(environment.subcampaigns)
                 subcampaign_algos = [Subcampaign_algo(self.budget_discretization_steps.copy()) for _ in range(num_subcampaigns)]
+                for i in range(num_subcampaigns):
+                    samples = [[k * self.daily_budget / 50 for k in range(51)],
+                               [sum(environment.get_subcampaign(i).sample(k * self.daily_budget / 50, save_sample = False)) for k in range(51)]]
+                    subcampaign_algos[i].learn_gp_kernel_hyperparameters(samples)
                 
                 # Retrain gaussian processes
                 for subcampaign_id in range(num_subcampaigns):
                     subcampaign_algo = subcampaign_algos[subcampaign_id]
                     for (arm, sample) in environment.get_subcampaign(subcampaign_id).get_samples():
-                        subcampaign_algo.gaussian_process.update_observations_raw(arm, sample)
+                        for y in sample:
+                            subcampaign_algo.gaussian_process.update_observations_raw(arm, y * len(sample))
                     subcampaign_algo.gaussian_process.update_model()
 
         print("-------------------------")

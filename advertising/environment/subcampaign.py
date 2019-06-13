@@ -5,8 +5,8 @@ class Subcampaign:
     def __init__(self, classes):
         self.classes = classes
 
-    def sample(self, x):
-        return tuple([c.sample(x / len(self.classes)) for c in self.classes])
+    def sample(self, x, save_sample = True):
+        return tuple([c.sample(x / len(self.classes), save_sample) for c in self.classes])
 
     def get_real(self, x):
         val = 0
@@ -32,7 +32,7 @@ class Subcampaign:
         samples = []
         for t in range(len(self.classes[0].samples)):
             iteration_samples = [c.samples[t] for c in self.classes]
-            samples.append((sum([x[0] for x in iteration_samples]), sum([x[1] for x in iteration_samples])))
+            samples.append((sum([x[0] for x in iteration_samples]), tuple(map(lambda s: s[1], iteration_samples))))
         return samples
 
     def copy(self):

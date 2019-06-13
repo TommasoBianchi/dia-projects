@@ -6,15 +6,26 @@ class Subcampaign_algo:
         self.arms = arms
 
     # Add the new observation to the model and update the model
-    def update(self, arm, reward):
+    def update(self, arm, reward, update_model = True):
+        if type(reward) != type(tuple()):
+            reward = tuple(reward)
+
         arm_idx = self.gaussian_process.find_arm(arm)
-        self.gaussian_process.update_observations(arm_idx, reward)
-        self.gaussian_process.update_model()
+
+        for y in reward:
+            self.gaussian_process.update_observations(arm_idx, y * len(reward))
+        if update_model:
+            self.gaussian_process.update_model()
 
     # Get the prediction of the GP for a given arm
     def sample_from_gp(self, arm):
         arm_idx = self.gaussian_process.find_arm(arm)
         return self.gaussian_process.sample(arm_idx)
+
+    # Get the lower bound (95% gaussian) of the GP for a given arm
+    def lower_bound_from_gp(self, arm):
+        arm_idx = self.gaussian_process.find_arm(arm)
+        return self.gaussian_process.lower_bound(arm_idx)
 
     # Get the variance of the GP for a given arm
     def get_sigma(self, arm):
@@ -31,3 +42,6 @@ class Subcampaign_algo:
 
     def get_pulled_arms_amount(self, arm):
         return len(list(filter(lambda x: x == arm, self.gaussian_process.pulled_arms)))
+
+    def learn_gp_kernel_hyperparameters(self, samples):
+        self.gaussian_process.learn_kernel_hyperparameters(samples)

@@ -50,7 +50,11 @@ class GP_TS:
 
     # Get the lower bound of a given arm
     def lower_bound(self, arm_idx):
-        return self.means[arm_idx] - 1.96 * self.sigmas[arm_idx] / np.sqrt(len(self.pulled_arms))
+        n_samples = len(list(filter(lambda x: x == self.arms[arm_idx], self.pulled_arms)))
+        if n_samples == 0:
+            return -np.inf
+        else:
+            return self.means[arm_idx] - 1.96 * self.sigmas[arm_idx] / np.sqrt(n_samples)
 
     # Get the variance of a given arm
     def get_sigma(self, arm_idx):

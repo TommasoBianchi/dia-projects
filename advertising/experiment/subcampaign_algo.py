@@ -8,7 +8,7 @@ class Subcampaign_algo:
     # Add the new observation to the model and update the model
     def update(self, arm, reward, update_model = True):
         if type(reward) != type(tuple()):
-            reward = tuple(reward)
+            reward = (reward,)
 
         arm_idx = self.gaussian_process.find_arm(arm)
 

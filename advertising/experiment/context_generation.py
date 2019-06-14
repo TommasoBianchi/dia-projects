@@ -21,12 +21,13 @@ def disaggregate_context(environment, arms, budget):
                 (arm, sample) = (sum([x[0] for x in iteration_samples]), tuple(map(lambda s: s[1], iteration_samples)))
                 for y in sample:
                     subcampaign_algo.gaussian_process.update_observations_raw(arm, y * len(sample))
+                #subcampaign_algo.gaussian_process.update_observations_raw(arm, sum(sample))
             subcampaign_algo.gaussian_process.update_model()
 
         # Generate lower bounds from the GPs
         lower_bounds = []
         for subcampaign_algo in subcampaign_algos:
-            subcampaign_lower_bounds = [subcampaign_algo.sample_from_gp(arm) for arm in arms]
+            subcampaign_lower_bounds = [subcampaign_algo.lower_bound_from_gp(arm) for arm in arms]
             lower_bounds.append(subcampaign_lower_bounds)
 
         # Find optimal arm (Knapsack)

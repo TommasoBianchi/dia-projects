@@ -17,7 +17,7 @@ import numpy as np
 
 timesteps_stationary = 250
 timesteps_context_generation = 250
-context_generation_rate = 25
+context_generation_rate = 10
 daily_budget = 100
 budget_discretization_density = 10
 budget_discretization_steps = [i * daily_budget / budget_discretization_density for i in range(budget_discretization_density + 1)]

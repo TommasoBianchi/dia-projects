@@ -90,7 +90,8 @@ class Experiment:
                     subcampaign_algo = subcampaign_algos[subcampaign_id]
                     for (arm, sample) in environment.get_subcampaign(subcampaign_id).get_samples():
                         for y in sample:
-                            subcampaign_algo.gaussian_process.update_observations_raw(arm, y * len(sample))
+                           subcampaign_algo.gaussian_process.update_observations_raw(arm, y * len(sample))
+                        #subcampaign_algo.gaussian_process.update_observations_raw(arm, sum(sample))
                     subcampaign_algo.gaussian_process.update_model()
 
         print("-------------------------")

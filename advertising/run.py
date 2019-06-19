@@ -159,17 +159,19 @@ plt.close()
 for i in range(len(stationary_final_environment.subcampaigns)):
     subcampaign = stationary_final_environment.subcampaigns[i]
     subcampaign_name = str(subcampaign.get_classes_ids())
-    plot_function(subcampaign.get_real, range(daily_budget))
+    plot_function(subcampaign.get_real, range(daily_budget+1))
     
     gp = stationary_final_subcampaign_algos[i].gaussian_process.gaussian_process
     mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0] + GPTS_prior(x)
     std_function = lambda x: gp.predict(np.atleast_2d(x).T, return_std = True)[1][0]
-    plot_function(mean_function, range(daily_budget), std_function)
+    plot_function(mean_function, range(daily_budget+1), std_function)
 
     # Draw the optimal arm
     optimal_arm = next(arm for (id, arm) in optimal_super_arm if id == i)
-    optimal_arm_value = mean_function(optimal_arm)
+    optimal_arm_value = subcampaign.get_real(optimal_arm)
     plt.scatter(optimal_arm, optimal_arm_value)
+    plt.ylim(bottom = 0)
+    plt.xlim(0, 100)
     
     plt.legend(['Real click function', 'Estimated click function'], bbox_to_anchor = (1.05, 1), loc = 2)
     plt.title("Subcampaign " + subcampaign_name)
@@ -186,18 +188,20 @@ for i in range(len(stationary_final_environment.subcampaigns)):
 for i in range(len(context_generation_final_environment.subcampaigns)):
     subcampaign = context_generation_final_environment.subcampaigns[i]
     subcampaign_name = str(subcampaign.get_classes_ids())
-    plot_function(subcampaign.get_real, range(daily_budget))
+    plot_function(subcampaign.get_real, range(daily_budget+1))
     
     gp = context_generation_final_subcampaign_algos[i].gaussian_process.gaussian_process
     
     mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0] + GPTS_prior(x)
     std_function = lambda x: gp.predict(np.atleast_2d(x).T, return_std = True)[1][0]
-    plot_function(mean_function, range(daily_budget), std_function)
+    plot_function(mean_function, range(daily_budget+1), std_function)
 
     # Draw the optimal arm
     optimal_arm = next(arm for (id, arm) in optimal_disaggregated_super_arm if id == i)
-    optimal_arm_value = mean_function(optimal_arm)
+    optimal_arm_value = subcampaign.get_real(optimal_arm)
     plt.scatter(optimal_arm, optimal_arm_value)
+    plt.ylim(bottom = 0)
+    plt.xlim(0, 100)
     
     plt.legend(['Real click function', 'Estimated click function'], bbox_to_anchor = (1.05, 1), loc = 2)
     plt.title("Subcampaign " + subcampaign_name)

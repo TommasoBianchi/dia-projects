@@ -19,7 +19,7 @@ timesteps_stationary = 250
 timesteps_context_generation = 250
 context_generation_rate = 10
 daily_budget = 100
-budget_discretization_density = 10
+budget_discretization_density = 20
 budget_discretization_steps = [i * daily_budget / budget_discretization_density for i in range(budget_discretization_density + 1)]
 
 plot_path = "plots/"
@@ -93,6 +93,8 @@ print("Value of optimal disaggregated superarm = " + str(optimal_disaggregated_s
 
 clairvoyant_rewards = [optimal_super_arm_value for _ in range(timesteps_stationary)]
 disaggregated_clairvoyant_rewards = [optimal_disaggregated_super_arm_value for _ in range(timesteps_context_generation)]
+
+exit()
 
 ############################################
 ## Perform experiments

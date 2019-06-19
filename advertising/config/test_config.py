@@ -3,9 +3,9 @@ configuration = [
 	[{
 		'noise_mean': 0,
 		'noise_variance': 1,
-		'max_value': 15,
-		'offset': 8,
-		'speed': 0.2
+		'max_value': 16,
+		'offset': 10,
+		'speed': 0.5
 	},
 	{
 		'noise_mean': 0,
@@ -47,9 +47,9 @@ configuration = [
 	[{
 		'noise_mean': 0,
 		'noise_variance': 1,
-		'max_value': 20,
+		'max_value': 25,
 		'offset': 8,
-		'speed': 0.4
+		'speed': 0.2
 	},
 	{
 		'noise_mean': 0,
@@ -62,8 +62,52 @@ configuration = [
 		'noise_mean': 0,
 		'noise_variance': 1,
 		'max_value': 10,
-		'offset': 5,
-		'speed': 0.2
+		'offset': 1,
+		'speed': 0.4
+	}],
+	# Subcampaign 4
+	[{
+		'noise_mean': 0,
+		'noise_variance': 1,
+		'max_value': 30,
+		'offset': 4,
+		'speed': 0.15
+	},
+	{
+		'noise_mean': 0,
+		'noise_variance': 1,
+		'max_value': 20,
+		'offset': 12,
+		'speed': 0.06
+	},
+	{
+		'noise_mean': 0,
+		'noise_variance': 1,
+		'max_value': 100,
+		'offset': 30,
+		'speed': 0.02
+	}],
+	# Subcampaign 5
+	[{
+		'noise_mean': 0,
+		'noise_variance': 1,
+		'max_value': 20,
+		'offset': 2,
+		'speed': 1.5
+	},
+	{
+		'noise_mean': 0,
+		'noise_variance': 1,
+		'max_value': 10,
+		'offset': 8,
+		'speed': 0.5
+	},
+	{
+		'noise_mean': 0,
+		'noise_variance': 1,
+		'max_value': 30,
+		'offset': 15,
+		'speed': 0.1
 	}]
 ]
 

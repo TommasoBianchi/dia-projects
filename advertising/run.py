@@ -94,8 +94,6 @@ print("Value of optimal disaggregated superarm = " + str(optimal_disaggregated_s
 clairvoyant_rewards = [optimal_super_arm_value for _ in range(timesteps_stationary)]
 disaggregated_clairvoyant_rewards = [optimal_disaggregated_super_arm_value for _ in range(timesteps_context_generation)]
 
-exit()
-
 ############################################
 ## Perform experiments
 ############################################

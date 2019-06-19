@@ -76,11 +76,14 @@ class GP_TS:
                                                                 normalize_y=True, n_restarts_optimizer=0)
 
     # Get the regression error (MSE) with respect to the training samples for a given arm
-    def get_arm_average_regression_error(self, arm):
+    def get_arm_average_regression_error(self, arm, points_to_evaluate = None):
         total_squared_error = 0
         count = 0
 
-        for (pulled_arm, collected_reward) in zip(self.pulled_arms, self.collected_rewards):
+        if points_to_evaluate == None:
+            points_to_evaluate = zip(self.pulled_arms, self.collected_rewards)
+
+        for (pulled_arm, collected_reward) in points_to_evaluate:
             if pulled_arm == arm:
                 count += 1
                 x = self.means[self.find_arm(arm)]
@@ -90,9 +93,13 @@ class GP_TS:
             return -1
         return total_squared_error / count
 
-    def get_average_regression_error(self):
+    def get_average_regression_error(self, points_to_evaluate = None):
         total_squared_error = 0
-        for (pulled_arm, collected_reward) in zip(self.pulled_arms, self.collected_rewards):
+
+        if points_to_evaluate == None:
+            points_to_evaluate = zip(self.pulled_arms, self.collected_rewards)
+
+        for (pulled_arm, collected_reward) in points_to_evaluate:
             x = self.means[self.find_arm(pulled_arm)]
             total_squared_error += (x - self.prior(pulled_arm) - collected_reward)**2
         return total_squared_error / len(self.pulled_arms)

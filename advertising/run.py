@@ -137,6 +137,17 @@ plt.title("Average regret")
 plt.savefig(plot_path + 'average_regret.png', bbox_inches='tight', dpi = 300)
 plt.close()
 
+# Average percentage regrets
+
+plt.plot([((cumulative_clairvoyant_reward[i] - cumulative_stationary_reward[i]) / (i+1)) / optimal_super_arm_value 
+                for i in range(len(cumulative_stationary_reward))])
+plt.plot([((cumulative_disaggregated_clairvoyant_reward[i] - cumulative_context_generation_reward[i]) / (i+1)) / optimal_disaggregated_super_arm_value
+                for i in range(len(cumulative_context_generation_reward))])
+plt.legend(['GPTS - Stationary', 'GPTS - Context generation'], bbox_to_anchor = (1.05, 1), loc = 2)
+plt.title("Average percentage regret")
+plt.savefig(plot_path + 'average_percentage_regret.png', bbox_inches='tight', dpi = 300)
+plt.close()
+
 # GP estimations and number of pulls per arm - stationary
 
 for i in range(len(stationary_final_environment.subcampaigns)):

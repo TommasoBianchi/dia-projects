@@ -33,12 +33,12 @@ class Subcampaign_algo:
         return self.gaussian_process.get_sigma(arm_idx)
 
     # Get the regression error as the maximum of the regression errros over each arm
-    def get_regression_error(self, use_sum = False):
+    def get_regression_error(self, use_sum = False, points_to_evaluate = None):
         if use_sum:
             #return sum([self.gaussian_process.get_arm_average_regression_error(arm) for arm in self.arms])
-            return self.gaussian_process.get_average_regression_error()
+            return self.gaussian_process.get_average_regression_error(points_to_evaluate)
         else:   
-            return max([self.gaussian_process.get_arm_average_regression_error(arm) for arm in self.arms])
+            return max([self.gaussian_process.get_arm_average_regression_error(arm, points_to_evaluate) for arm in self.arms])
 
     def get_pulled_arms_amount(self, arm):
         return len(list(filter(lambda x: x == arm, self.gaussian_process.pulled_arms)))

@@ -3,7 +3,7 @@ from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 import numpy as np
 
 class GP_TS:
-    def __init__(self, arms, kernel=C(1.0, (1e-3, 1e3))*RBF(1.0, (1e-3, 1e3)), alpha=10.0):
+    def __init__(self, arms, kernel=C(1.0, (1e-3, 1e3))*RBF(1.0, (1e-3, 1e3)), alpha=10.0, prior = None):
         self.n_arms = len(arms)
         self.predicted_arms = np.zeros(self.n_arms)
         self.sigmas = np.ones(self.n_arms) * 10
@@ -12,9 +12,10 @@ class GP_TS:
         self.pulled_arms = []
         self.gaussian_process = GaussianProcessRegressor(kernel=kernel, alpha=alpha**2, normalize_y=True,
                                                          n_restarts_optimizer=9)
-
-    def prior(self, x):
-        return x
+        if prior == None:
+            self.prior = lambda x: 0
+        else:
+            self.prior = prior
 
     # Fit the gaussian process using the pulled arms and their rewards.
     # It saves the results of the prediction in self.predicted_arms and saves the sigma of each arm in self.sigmas
@@ -69,7 +70,7 @@ class GP_TS:
 
     def learn_kernel_hyperparameters(self, samples):
         x = np.atleast_2d(samples[0]).T
-        y = [y - self.prior(x) for (x, y) in zip(samples[0], samples[1])] #samples[1]
+        y = [y - self.prior(x) for (x, y) in zip(samples[0], samples[1])]
         self.gaussian_process.fit(x, y)
         self.gaussian_process = GaussianProcessRegressor(kernel=self.gaussian_process.kernel_, 
                                                                 alpha=self.gaussian_process.alpha, 

@@ -1,8 +1,8 @@
 from gaussian_processes import GP_TS
 
 class Subcampaign_algo:
-    def __init__(self, arms):
-        self.gaussian_process = GP_TS.GP_TS(arms)
+    def __init__(self, arms, GPTS_prior = None):
+        self.gaussian_process = GP_TS.GP_TS(arms, prior = GPTS_prior)
         self.arms = arms
 
     # Add the new observation to the model and update the model

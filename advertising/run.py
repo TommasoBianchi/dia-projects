@@ -95,10 +95,16 @@ clairvoyant_rewards = [optimal_super_arm_value for _ in range(timesteps_stationa
 disaggregated_clairvoyant_rewards = [optimal_disaggregated_super_arm_value for _ in range(timesteps_context_generation)]
 
 ############################################
+## Define GPTS prior
+############################################
+
+GPTS_prior = lambda x: 3 * x
+
+############################################
 ## Perform experiments
 ############################################
 
-experiment = Experiment(original_environment, budget_discretization_steps, daily_budget)
+experiment = Experiment(original_environment, budget_discretization_steps, daily_budget, GPTS_prior)
 
 print("------ GPTS stationary ------")
 (stationary_rewards, stationary_final_environment, stationary_final_subcampaign_algos,
@@ -156,7 +162,7 @@ for i in range(len(stationary_final_environment.subcampaigns)):
     plot_function(subcampaign.get_real, range(daily_budget))
     
     gp = stationary_final_subcampaign_algos[i].gaussian_process.gaussian_process
-    mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0] + x
+    mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0] + GPTS_prior(x)
     std_function = lambda x: gp.predict(np.atleast_2d(x).T, return_std = True)[1][0]
     plot_function(mean_function, range(daily_budget), std_function)
     
@@ -179,7 +185,7 @@ for i in range(len(context_generation_final_environment.subcampaigns)):
     
     gp = context_generation_final_subcampaign_algos[i].gaussian_process.gaussian_process
     
-    mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0] + x
+    mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0] + GPTS_prior(x)
     std_function = lambda x: gp.predict(np.atleast_2d(x).T, return_std = True)[1][0]
     plot_function(mean_function, range(daily_budget), std_function)
     

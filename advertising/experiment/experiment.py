@@ -7,10 +7,11 @@ from utilities.rounding import round_to_nearest_feasible_superarm
 from utilities.print_functions import prettify_super_arm
 
 class Experiment:
-    def __init__(self, environment, budget_discretization_steps, daily_budget):
+    def __init__(self, environment, budget_discretization_steps, daily_budget, GPTS_prior):
         self.environment = environment
         self.budget_discretization_steps = budget_discretization_steps
         self.daily_budget = daily_budget
+        self.GPTS_prior = GPTS_prior
 
     def perform(self, timesteps, context_generation_rate = -1):
         rewards = []
@@ -18,7 +19,7 @@ class Experiment:
         environment = self.environment.copy()
         num_subcampaigns = len(environment.subcampaigns)
 
-        subcampaign_algos = [Subcampaign_algo(self.budget_discretization_steps.copy()) for _ in range(num_subcampaigns)]
+        subcampaign_algos = [Subcampaign_algo(self.budget_discretization_steps.copy(), self.GPTS_prior) for _ in range(num_subcampaigns)]
         for i in range(num_subcampaigns):
             samples = [[k * self.daily_budget / 50 for k in range(51)],
                        [sum(environment.get_subcampaign(i).sample(k * self.daily_budget /50, save_sample = False)) for k in range(51)]]
@@ -82,7 +83,7 @@ class Experiment:
 
                 # Update parameters
                 num_subcampaigns = len(environment.subcampaigns)
-                subcampaign_algos = [Subcampaign_algo(self.budget_discretization_steps.copy()) for _ in range(num_subcampaigns)]
+                subcampaign_algos = [Subcampaign_algo(self.budget_discretization_steps.copy(), self.GPTS_prior) for _ in range(num_subcampaigns)]
                 for i in range(num_subcampaigns):
                     samples = [[k * self.daily_budget / 50 for k in range(51)],
                                [sum(environment.get_subcampaign(i).sample(k * self.daily_budget / 50, save_sample = False)) for k in range(51)]]

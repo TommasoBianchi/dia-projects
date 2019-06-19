@@ -15,8 +15,8 @@ import numpy as np
 ## Configurations
 ############################################
 
-timesteps_stationary = 50
-timesteps_context_generation = 0
+timesteps_stationary = 250
+timesteps_context_generation = 250
 context_generation_rate = 10
 daily_budget = 100
 budget_discretization_density = 20
@@ -165,6 +165,11 @@ for i in range(len(stationary_final_environment.subcampaigns)):
     mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0] + GPTS_prior(x)
     std_function = lambda x: gp.predict(np.atleast_2d(x).T, return_std = True)[1][0]
     plot_function(mean_function, range(daily_budget), std_function)
+
+    # Draw the optimal arm
+    optimal_arm = next(arm for (id, arm) in optimal_super_arm if id == i)
+    optimal_arm_value = mean_function(optimal_arm)
+    plt.scatter(optimal_arm, optimal_arm_value)
     
     plt.legend(['Real click function', 'Estimated click function'], bbox_to_anchor = (1.05, 1), loc = 2)
     plt.title("Subcampaign " + subcampaign_name)
@@ -188,6 +193,11 @@ for i in range(len(context_generation_final_environment.subcampaigns)):
     mean_function = lambda x: gp.predict(np.atleast_2d(x).T)[0] + GPTS_prior(x)
     std_function = lambda x: gp.predict(np.atleast_2d(x).T, return_std = True)[1][0]
     plot_function(mean_function, range(daily_budget), std_function)
+
+    # Draw the optimal arm
+    optimal_arm = next(arm for (id, arm) in optimal_disaggregated_super_arm if id == i)
+    optimal_arm_value = mean_function(optimal_arm)
+    plt.scatter(optimal_arm, optimal_arm_value)
     
     plt.legend(['Real click function', 'Estimated click function'], bbox_to_anchor = (1.05, 1), loc = 2)
     plt.title("Subcampaign " + subcampaign_name)

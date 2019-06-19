@@ -54,7 +54,7 @@ configuration = [
 	{
 		'noise_mean': 0,
 		'noise_variance': 2,
-		'max_value': 150,
+		'max_value': 120,
 		'offset': 0,
 		'speed': 0.04
 	},

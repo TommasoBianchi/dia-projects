@@ -86,12 +86,12 @@ class GP_TS:
         for (pulled_arm, collected_reward) in points_to_evaluate:
             if pulled_arm == arm:
                 count += 1
-                x = self.means[self.find_arm(arm)]
+                x = self.means[self.find_arm(pulled_arm)]
                 total_squared_error += (x - self.prior(pulled_arm) - collected_reward)**2
 
         if count == 0:
             return -1
-        return total_squared_error / count
+        return np.sqrt(total_squared_error) / count
 
     def get_average_regression_error(self, points_to_evaluate = None):
         total_squared_error = 0
@@ -102,4 +102,4 @@ class GP_TS:
         for (pulled_arm, collected_reward) in points_to_evaluate:
             x = self.means[self.find_arm(pulled_arm)]
             total_squared_error += (x - self.prior(pulled_arm) - collected_reward)**2
-        return total_squared_error / len(self.pulled_arms)
+        return np.sqrt(total_squared_error) / len(points_to_evaluate)

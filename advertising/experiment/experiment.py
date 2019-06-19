@@ -28,7 +28,6 @@ class Experiment:
         if context_generation_rate < 0:
             regression_errors_max = [[] for _ in range(num_subcampaigns)]
             regression_errors_sum = [[] for _ in range(num_subcampaigns)]
-            regression_rewards = [[] for _ in range(num_subcampaigns)]
 
         for t in range(timesteps):
 
@@ -57,10 +56,6 @@ class Experiment:
 
                 # Fit multiple point to the GPs (one per each class of user inside this subcampaing)
                 subcampaign_algos[subcampaign_id].update(budget_assigned, reward)
-                
-                # Run only when without context generation (save aggregated rewards to evaluate regression error)
-                if context_generation_rate < 0:
-                    regression_rewards[subcampaign_id].append((budget_assigned, sum(reward)))
 
             print("-------------------------")
             print("t = " + str(t+1) + ", superarm = " + prettify_super_arm(environment, super_arm) + ", reward = " + str(total_reward))
@@ -70,10 +65,11 @@ class Experiment:
             # Run only when without context generation
             if context_generation_rate < 0:
                 for i in range(num_subcampaigns):
+                    regression_rewards = [(x, environment.subcampaigns[i].get_real(x)) for x in self.budget_discretization_steps]
                     regression_errors_max[i].append(
-                        subcampaign_algos[i].get_regression_error(points_to_evaluate = regression_rewards[i]))
+                        subcampaign_algos[i].get_regression_error(points_to_evaluate = regression_rewards))
                     regression_errors_sum[i].append(
-                        subcampaign_algos[i].get_regression_error(use_sum = True, points_to_evaluate = regression_rewards[i]))
+                        subcampaign_algos[i].get_regression_error(use_sum = True, points_to_evaluate = regression_rewards))
 
             # Context generation
             if context_generation_rate > 0 and t < timesteps-1 and (t+1) % context_generation_rate == 0:

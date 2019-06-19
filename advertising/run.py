@@ -15,8 +15,8 @@ import numpy as np
 ## Configurations
 ############################################
 
-timesteps_stationary = 250
-timesteps_context_generation = 250
+timesteps_stationary = 50
+timesteps_context_generation = 0
 context_generation_rate = 10
 daily_budget = 100
 budget_discretization_density = 20

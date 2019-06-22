@@ -1,5 +1,3 @@
-print("Job Matching Service")
-
 """
     We are EasyJob, an innovative startup based in Milan proposing a breakthrough platform in the Job Searching service.
     Our mission is to help young candidates specialized in IT with different skills to find their dream job, and the
@@ -371,4 +369,5 @@ configuration = {
 
 
 def get_configuration():
+    print("-- Job Matching Service --")
     return configuration

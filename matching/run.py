@@ -12,7 +12,8 @@ try:
 
     from matching.config.random_config import get_configuration as get_random_configuration
     from matching.config.test_config import get_configuration as get_test_configuration
-    from matching.config.multiphase_config import get_configuration as get_test_multiphase_configuration
+    from matching.config.test_multiphase_config import get_configuration as get_test_multiphase_configuration
+    from matching.config.multiphase_config import get_configuration as get_multiphase_configuration
 
     from matching.experiment.experiment import Experiment, LearnerType, LowerBoundType
 
@@ -31,6 +32,7 @@ except (SystemError, ImportError):
     from config.random_config import get_configuration as get_random_configuration
     from config.test_config import get_configuration as get_test_configuration
     from config.test_multiphase_config import get_configuration as get_test_multiphase_configuration
+    from config.multiphase_config import get_configuration as get_multiphase_configuration
 
     from experiment import Experiment, LearnerType, LowerBoundType
 
@@ -52,7 +54,7 @@ num_days = 500    # Number of days the experiment is run
 env_classes = []
 phase_lengths = []
 
-configuration = get_test_multiphase_configuration()
+configuration = get_multiphase_configuration()
 for phase_data in configuration['phase_data']:
     phase_lengths.append(phase_data['duration'])
     phase_env_classes = []
@@ -115,45 +117,42 @@ start_time = time.time()
 ts_ctx_rewards, ts_ctx_monitor = experiment.perform(num_days, LearnerType.ThompsonSampling,
                                     context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
 print("TS-context executed in " + str(time.time() - start_time) + " seconds")
+print("TS-context optimal context structures: " + str(ts_ctx_monitor.get_generated_context_structures()))
 
 # UCB1 with context generation (hoeffding lower bounds)
 start_time = time.time()
 ucb1_ctx_rewards, ucb1_ctx_monitor = experiment.perform(num_days, LearnerType.UCB1,
                                       context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
 print("UCB1-context executed in " + str(time.time() - start_time) + " seconds")
-
-print(ts_ctx_monitor.get_generated_context_structures())
-print(ucb1_ctx_monitor.get_generated_context_structures())
+print("UCB1-context optimal context structures: " + str(ucb1_ctx_monitor.get_generated_context_structures()))
 
 # Thompson sampling with context generation (gaussian lower bounds)
 start_time = time.time()
 ts_ctx_gaussian_rewards, ts_ctx_gaussian_monitor = experiment.perform(num_days, LearnerType.ThompsonSampling, lower_bound_type = LowerBoundType.Gaussian,
                                     context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
 print("TS-context-gaussian executed in " + str(time.time() - start_time) + " seconds")
+print("TS-context-gaussian optimal context structures: " + str(ts_ctx_gaussian_monitor.get_generated_context_structures()))
 
 # UCB1 with context generation (gaussian lower bounds)
 start_time = time.time()
 ucb1_ctx_gaussian_rewards, ucb1_ctx_gaussian_monitor = experiment.perform(num_days, LearnerType.UCB1, lower_bound_type = LowerBoundType.Gaussian,
                                       context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
 print("UCB1-context-gaussian executed in " + str(time.time() - start_time) + " seconds")
-
-print(ts_ctx_gaussian_monitor.get_generated_context_structures())
-print(ucb1_ctx_gaussian_monitor.get_generated_context_structures())
+print("UCB1-context-gaussian optimal context structures: " + str(ucb1_ctx_gaussian_monitor.get_generated_context_structures()))
 
 # Thompson sampling with context generation (hybrid lower bounds)
 start_time = time.time()
 ts_ctx_hybrid_rewards, ts_ctx_hybrid_monitor = experiment.perform(num_days, LearnerType.ThompsonSampling, lower_bound_type = LowerBoundType.Hybrid,
                                     context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
 print("TS-context-hybrid executed in " + str(time.time() - start_time) + " seconds")
+print("TS-context-hybrid optimal context structures: " + str(ts_ctx_hybrid_monitor.get_generated_context_structures()))
 
 # UCB1 with context generation (hybrid lower bounds)
 start_time = time.time()
 ucb1_ctx_hybrid_rewards, ucb1_ctx_hybrid_monitor = experiment.perform(num_days, LearnerType.UCB1, lower_bound_type = LowerBoundType.Hybrid,
                                       context_generation_every_day = int(num_days / 3) + 1, debug_info = False)
 print("UCB1-context-hybrid executed in " + str(time.time() - start_time) + " seconds")
-
-print(ts_ctx_hybrid_monitor.get_generated_context_structures())
-print(ucb1_ctx_hybrid_monitor.get_generated_context_structures())
+print("UCB1-context-hybrid optimal context structures: " + str(ucb1_ctx_hybrid_monitor.get_generated_context_structures()))
 
 ###############################################
 # Plotting performances (i.e. rewards/regrets)
@@ -345,3 +344,20 @@ plt.legend(['Thompson sampling', 'UCB1', 'Thompson sampling (known context)',
             bbox_to_anchor = (1.05, 1), loc = 2)
 plt.savefig(plot_path + 'average_rewards_per_arm.png', bbox_inches='tight', dpi = 300)
 plt.close()
+
+left_classes_ids = [c.id for c in environment.classes[0] if c.is_left]
+right_classes_ids = [c.id for c in environment.classes[0] if not c.is_left]
+for l_id in left_classes_ids:
+    for r_id in right_classes_ids:
+        arm = (l_id, r_id)
+        plt.plot(np.cumsum(ts_rewards_per_arm[arm]) / np.maximum(np.cumsum(ts_pulls_per_arm[arm]), 1))
+        plt.plot(np.cumsum(ucb1_rewards_per_arm[arm]) / np.maximum(np.cumsum(ucb1_pulls_per_arm[arm]), 1))
+        plt.plot(np.cumsum(ts_known_ctx_rewards_per_arm[arm]) / np.maximum(np.cumsum(ts_known_ctx_pulls_per_arm[arm]), 1))
+        plt.plot(np.cumsum(ucb1_known_ctx_rewards_per_arm[arm]) / np.maximum(np.cumsum(ucb1_known_ctx_pulls_per_arm[arm]), 1))
+        plt.plot(np.cumsum(ts_ctx_rewards_per_arm[arm]) / np.maximum(np.cumsum(ts_ctx_pulls_per_arm[arm]), 1))
+        plt.plot(np.cumsum(ucb1_ctx_rewards_per_arm[arm]) / np.maximum(np.cumsum(ucb1_ctx_pulls_per_arm[arm]), 1))
+        plt.legend(['Thompson sampling', 'UCB1', 'Thompson sampling (known context)', 
+                    'UCB1 (known context)', 'Thompson sampling + context generation', 'UCB1 + context generation'], 
+                    bbox_to_anchor = (1.05, 1), loc = 2)
+        plt.savefig(plot_path + 'average_rewards_per_arm_' + str(arm) + '.png', bbox_inches='tight', dpi = 300)
+        plt.close()

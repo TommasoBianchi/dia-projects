@@ -340,16 +340,6 @@ class Experiment():
                                     context_key = (round_id, min(left_id, right_id), max(left_id, right_id))
                                     context_generation_exp.edge_lower_bounds[context_key] = total_lower_bound
 
-                    ### TEST
-                    # print("----- Testing context structure " + str(context_structure))
-                    # for (context_id, context) in enumerate(context_structure):
-                    #     context_strart_round = sum(context_structure[:context_id])
-                    #     print("-- Phase " + str(context_id))
-                    #     for left_id in left_classes_ids:
-                    #         for right_id in right_classes_ids:
-                    #             print(str((left_id, right_id)) + " = " + str(context_generation_exp.edge_lower_bounds[context_strart_round, left_id, right_id]))
-                    ### TEST
-
                     rewards, _ = context_generation_exp.perform(day + 1, LearnerType.ContextEvaluation, context_structure, monitoring_on = False)
 
                     if debug_info:
